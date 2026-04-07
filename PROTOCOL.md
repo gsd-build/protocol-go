@@ -4,8 +4,8 @@ Version: 1
 Transport: WebSocket (text frames, JSON payloads)
 
 This document is the **authoritative source** for the GSD Cloud relay protocol.
-Both the Go bindings in `packages/protocol-go/` and any TypeScript bindings
-must match this contract exactly.
+Both the Go bindings in this repository and any TypeScript bindings must match
+this contract exactly.
 
 ## Envelope
 

@@ -11,9 +11,29 @@ go get github.com/gsd-build/protocol-go
 ## Usage
 
 ```go
-import protocol "github.com/gsd-build/protocol-go"
+import (
+    "encoding/json"
 
-env := protocol.Envelope{Type: protocol.MessageTypeHello, Payload: hello}
+    protocol "github.com/gsd-build/protocol-go"
+)
+
+// Decode an incoming frame:
+env, err := protocol.ParseEnvelope(data)
+if err != nil {
+    // handle error
+}
+switch msg := env.Payload.(type) {
+case *protocol.Hello:
+    _ = msg.MachineID
+case *protocol.Task:
+    _ = msg.Prompt
+}
+
+// Encode an outgoing frame — marshal the payload struct directly:
+data, _ := json.Marshal(&protocol.Hello{
+    Type:      protocol.MsgTypeHello,
+    MachineID: "machine-1",
+})
 ```
 
 See [PROTOCOL.md](./PROTOCOL.md) for the wire format specification.
