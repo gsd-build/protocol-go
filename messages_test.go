@@ -11,15 +11,16 @@ func TestEnvelopeRoundTrip(t *testing.T) {
 		msg  any
 	}{
 		{"task", &Task{
-			Type:           MsgTypeTask,
-			TaskID:         "11111111-1111-1111-1111-111111111111",
-			SessionID:      "22222222-2222-2222-2222-222222222222",
-			ChannelID:      "ch-1",
-			Prompt:         "hello",
-			Model:          "claude-opus-4-6[1m]",
-			Effort:         "max",
-			PermissionMode: "acceptEdits",
-			CWD:            "/tmp/project",
+			Type:            MsgTypeTask,
+			TaskID:          "11111111-1111-1111-1111-111111111111",
+			SessionID:       "22222222-2222-2222-2222-222222222222",
+			ChannelID:       "ch-1",
+			Prompt:          "hello",
+			Model:           "claude-opus-4-6[1m]",
+			Effort:          "max",
+			PermissionMode:  "acceptEdits",
+			CWD:             "/tmp/project",
+			ClaudeSessionID: "claude-abc-123",
 		}},
 		{"stream", &Stream{
 			Type:           MsgTypeStream,

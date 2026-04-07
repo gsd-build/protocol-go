@@ -32,6 +32,7 @@ Dispatch a user message to a session.
 | permissionMode | string | e.g. `acceptEdits` |
 | personaSystemPrompt | string? | Injected via `--append-system-prompt` |
 | cwd | string | Absolute path on the daemon's machine |
+| claudeSessionId | string? | Pass to `claude -p --resume` to continue an existing Claude conversation. Empty for the first turn. |
 
 ### `stop`
 Interrupt the current Claude process for a session.

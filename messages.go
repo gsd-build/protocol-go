@@ -42,6 +42,7 @@ type Task struct {
 	PermissionMode      string `json:"permissionMode"`
 	PersonaSystemPrompt string `json:"personaSystemPrompt,omitempty"`
 	CWD                 string `json:"cwd"`
+	ClaudeSessionID     string `json:"claudeSessionId,omitempty"` // passed to --resume
 }
 
 // Stop asks the daemon to interrupt the current Claude process for a session.
