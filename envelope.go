@@ -35,6 +35,10 @@ func ParseEnvelope(data []byte) (*Envelope, error) {
 		payload = &BrowseDir{}
 	case MsgTypeReadFile:
 		payload = &ReadFile{}
+	case MsgTypeMkDir:
+		payload = &MkDir{}
+	case MsgTypeMkDirResult:
+		payload = &MkDirResult{}
 	case MsgTypeStream:
 		payload = &Stream{}
 	case MsgTypeTaskStarted:

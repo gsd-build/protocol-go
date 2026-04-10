@@ -13,6 +13,8 @@ const (
 	MsgTypeQuestionResponse   = "questionResponse"
 	MsgTypeBrowseDir          = "browseDir"
 	MsgTypeReadFile           = "readFile"
+	MsgTypeMkDir              = "mkDir"
+	MsgTypeMkDirResult        = "mkDirResult"
 
 	MsgTypeStream            = "stream"
 	MsgTypeTaskStarted       = "taskStarted"
@@ -176,6 +178,24 @@ type BrowseDirResult struct {
 	OK        bool          `json:"ok"`
 	Entries   []BrowseEntry `json:"entries,omitempty"`
 	Error     string        `json:"error,omitempty"`
+}
+
+// MkDir asks the daemon to create a directory.
+type MkDir struct {
+	Type      string `json:"type"`
+	RequestID string `json:"requestId"`
+	ChannelID string `json:"channelId"`
+	MachineID string `json:"machineId"`
+	Path      string `json:"path"`
+}
+
+// MkDirResult is the daemon's response to a MkDir request.
+type MkDirResult struct {
+	Type      string `json:"type"`
+	RequestID string `json:"requestId"`
+	ChannelID string `json:"channelId"`
+	OK        bool   `json:"ok"`
+	Error     string `json:"error,omitempty"`
 }
 
 // ReadFileResult is the daemon's response to a ReadFile request.
