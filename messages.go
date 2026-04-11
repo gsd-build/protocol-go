@@ -26,10 +26,8 @@ const (
 	MsgTypeBrowseDirResult   = "browseDirResult"
 	MsgTypeReadFileResult    = "readFileResult"
 
-	MsgTypeHello         = "hello"
-	MsgTypeWelcome       = "welcome"
-	MsgTypeAck           = "ack"
-	MsgTypeReplayRequest = "replayRequest"
+	MsgTypeHello   = "hello"
+	MsgTypeWelcome = "welcome"
 )
 
 // Task is sent from the browser to the daemon to dispatch a user message.
@@ -211,30 +209,14 @@ type ReadFileResult struct {
 
 // Hello is the first frame sent by the daemon after connecting.
 type Hello struct {
-	Type                  string           `json:"type"`
-	MachineID             string           `json:"machineId"`
-	DaemonVersion         string           `json:"daemonVersion"`
-	OS                    string           `json:"os"`
-	Arch                  string           `json:"arch"`
-	LastSequenceBySession map[string]int64 `json:"lastSequenceBySession"`
+	Type          string `json:"type"`
+	MachineID     string `json:"machineId"`
+	DaemonVersion string `json:"daemonVersion"`
+	OS            string `json:"os"`
+	Arch          string `json:"arch"`
 }
 
-// Welcome is the relay's response to Hello with acked sequences.
+// Welcome is the relay's response to Hello.
 type Welcome struct {
-	Type                    string           `json:"type"`
-	AckedSequencesBySession map[string]int64 `json:"ackedSequencesBySession"`
-}
-
-// Ack tells the daemon to prune WAL entries up to a sequence number.
-type Ack struct {
-	Type           string `json:"type"`
-	SessionID      string `json:"sessionId"`
-	SequenceNumber int64  `json:"sequenceNumber"`
-}
-
-// ReplayRequest asks the daemon to resend WAL entries from a sequence.
-type ReplayRequest struct {
-	Type         string `json:"type"`
-	SessionID    string `json:"sessionId"`
-	FromSequence int64  `json:"fromSequence"`
+	Type string `json:"type"`
 }

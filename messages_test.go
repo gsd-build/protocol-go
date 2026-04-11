@@ -29,20 +29,12 @@ func TestEnvelopeRoundTrip(t *testing.T) {
 			SequenceNumber: 42,
 			Event:          json.RawMessage(`{"delta":{"text":"hi"}}`),
 		}},
-		{"ack", &Ack{
-			Type:           MsgTypeAck,
-			SessionID:      "33333333-3333-3333-3333-333333333333",
-			SequenceNumber: 99,
-		}},
 		{"hello", &Hello{
 			Type:          MsgTypeHello,
 			MachineID:     "mach-id",
 			DaemonVersion: "0.1.0",
 			OS:            "darwin",
 			Arch:          "arm64",
-			LastSequenceBySession: map[string]int64{
-				"22222222-2222-2222-2222-222222222222": 42,
-			},
 		}},
 		{"taskComplete", &TaskComplete{
 			Type:            MsgTypeTaskComplete,

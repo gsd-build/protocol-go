@@ -61,10 +61,6 @@ func ParseEnvelope(data []byte) (*Envelope, error) {
 		payload = &Hello{}
 	case MsgTypeWelcome:
 		payload = &Welcome{}
-	case MsgTypeAck:
-		payload = &Ack{}
-	case MsgTypeReplayRequest:
-		payload = &ReplayRequest{}
 	default:
 		return nil, fmt.Errorf("unknown message type: %q", peek.Type)
 	}
