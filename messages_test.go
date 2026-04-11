@@ -194,6 +194,35 @@ func TestWelcomeOmitsEmptyVersion(t *testing.T) {
 	}
 }
 
+func TestUpdateAvailableRoundTrip(t *testing.T) {
+	ua := &UpdateAvailable{
+		Type:           MsgTypeUpdateAvailable,
+		CurrentVersion: "0.1.0",
+		LatestVersion:  "0.2.0",
+	}
+
+	data, err := json.Marshal(ua)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+
+	env, err := ParseEnvelope(data)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+
+	got, ok := env.Payload.(*UpdateAvailable)
+	if !ok {
+		t.Fatalf("expected *UpdateAvailable, got %T", env.Payload)
+	}
+	if got.CurrentVersion != "0.1.0" {
+		t.Errorf("expected 0.1.0, got %s", got.CurrentVersion)
+	}
+	if got.LatestVersion != "0.2.0" {
+		t.Errorf("expected 0.2.0, got %s", got.LatestVersion)
+	}
+}
+
 func TestMachineStatusRoundTrip(t *testing.T) {
 	ms := &MachineStatus{
 		Type:      MsgTypeMachineStatus,
