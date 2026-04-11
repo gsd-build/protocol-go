@@ -29,6 +29,9 @@ const (
 
 	MsgTypeHello   = "hello"
 	MsgTypeWelcome = "welcome"
+
+	MsgTypeMachineStatus   = "machineStatus"
+	MsgTypeUpdateAvailable = "updateAvailable"
 )
 
 // Task is sent from the browser to the daemon to dispatch a user message.
@@ -218,14 +221,31 @@ type ReadFileResult struct {
 
 // Hello is the first frame sent by the daemon after connecting.
 type Hello struct {
-	Type          string `json:"type"`
-	MachineID     string `json:"machineId"`
-	DaemonVersion string `json:"daemonVersion"`
-	OS            string `json:"os"`
-	Arch          string `json:"arch"`
+	Type          string   `json:"type"`
+	MachineID     string   `json:"machineId"`
+	DaemonVersion string   `json:"daemonVersion"`
+	OS            string   `json:"os"`
+	Arch          string   `json:"arch"`
+	ActiveTasks   []string `json:"activeTasks,omitempty"`
 }
 
 // Welcome is the relay's response to Hello.
 type Welcome struct {
-	Type string `json:"type"`
+	Type                string `json:"type"`
+	LatestDaemonVersion string `json:"latestDaemonVersion,omitempty"`
+}
+
+// MachineStatus is pushed to all connected browsers when a daemon connects or disconnects.
+type MachineStatus struct {
+	Type      string `json:"type"`
+	MachineID string `json:"machineId"`
+	Online    bool   `json:"online"`
+}
+
+// UpdateAvailable is sent by the daemon to the relay (which forwards to browsers)
+// when the daemon detects a newer version is available via the Welcome message.
+type UpdateAvailable struct {
+	Type           string `json:"type"`
+	CurrentVersion string `json:"currentVersion"`
+	LatestVersion  string `json:"latestVersion"`
 }

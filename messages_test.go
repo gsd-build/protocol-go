@@ -98,3 +98,127 @@ func TestParseEnvelopeRejectsUnknownType(t *testing.T) {
 		t.Fatal("expected error for unknown type")
 	}
 }
+
+func TestHelloRoundTripWithActiveTasks(t *testing.T) {
+	h := &Hello{
+		Type:          MsgTypeHello,
+		MachineID:     "m-1",
+		DaemonVersion: "0.2.0",
+		OS:            "darwin",
+		Arch:          "arm64",
+		ActiveTasks:   []string{"task-a", "task-b"},
+	}
+
+	data, err := json.Marshal(h)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+
+	env, err := ParseEnvelope(data)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+
+	got, ok := env.Payload.(*Hello)
+	if !ok {
+		t.Fatalf("expected *Hello, got %T", env.Payload)
+	}
+	if len(got.ActiveTasks) != 2 {
+		t.Fatalf("expected 2 active tasks, got %d", len(got.ActiveTasks))
+	}
+	if got.ActiveTasks[0] != "task-a" || got.ActiveTasks[1] != "task-b" {
+		t.Errorf("unexpected active tasks: %v", got.ActiveTasks)
+	}
+}
+
+func TestHelloOmitsEmptyActiveTasks(t *testing.T) {
+	h := &Hello{
+		Type:          MsgTypeHello,
+		MachineID:     "m-1",
+		DaemonVersion: "0.2.0",
+		OS:            "darwin",
+		Arch:          "arm64",
+	}
+
+	data, err := json.Marshal(h)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+
+	var raw map[string]any
+	_ = json.Unmarshal(data, &raw)
+	if _, exists := raw["activeTasks"]; exists {
+		t.Error("activeTasks should be omitted when empty")
+	}
+}
+
+func TestWelcomeRoundTripWithVersion(t *testing.T) {
+	w := &Welcome{
+		Type:                MsgTypeWelcome,
+		LatestDaemonVersion: "0.2.1",
+	}
+
+	data, err := json.Marshal(w)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+
+	env, err := ParseEnvelope(data)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+
+	got, ok := env.Payload.(*Welcome)
+	if !ok {
+		t.Fatalf("expected *Welcome, got %T", env.Payload)
+	}
+	if got.LatestDaemonVersion != "0.2.1" {
+		t.Errorf("expected 0.2.1, got %s", got.LatestDaemonVersion)
+	}
+}
+
+func TestWelcomeOmitsEmptyVersion(t *testing.T) {
+	w := &Welcome{
+		Type: MsgTypeWelcome,
+	}
+
+	data, err := json.Marshal(w)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+
+	var raw map[string]any
+	_ = json.Unmarshal(data, &raw)
+	if _, exists := raw["latestDaemonVersion"]; exists {
+		t.Error("latestDaemonVersion should be omitted when empty")
+	}
+}
+
+func TestMachineStatusRoundTrip(t *testing.T) {
+	ms := &MachineStatus{
+		Type:      MsgTypeMachineStatus,
+		MachineID: "m-1",
+		Online:    true,
+	}
+
+	data, err := json.Marshal(ms)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+
+	env, err := ParseEnvelope(data)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+
+	got, ok := env.Payload.(*MachineStatus)
+	if !ok {
+		t.Fatalf("expected *MachineStatus, got %T", env.Payload)
+	}
+	if got.MachineID != "m-1" {
+		t.Errorf("expected m-1, got %s", got.MachineID)
+	}
+	if !got.Online {
+		t.Error("expected online=true")
+	}
+}
