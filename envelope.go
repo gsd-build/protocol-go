@@ -47,6 +47,8 @@ func ParseEnvelope(data []byte) (*Envelope, error) {
 		payload = &TaskComplete{}
 	case MsgTypeTaskError:
 		payload = &TaskError{}
+	case MsgTypeTaskCancelled:
+		payload = &TaskCancelled{}
 	case MsgTypePermissionRequest:
 		payload = &PermissionRequest{}
 	case MsgTypeQuestion:

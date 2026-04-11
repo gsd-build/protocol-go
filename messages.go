@@ -20,6 +20,7 @@ const (
 	MsgTypeTaskStarted       = "taskStarted"
 	MsgTypeTaskComplete      = "taskComplete"
 	MsgTypeTaskError         = "taskError"
+	MsgTypeTaskCancelled     = "taskCancelled"
 	MsgTypePermissionRequest = "permissionRequest"
 	MsgTypeQuestion          = "question"
 	MsgTypeHeartbeat         = "heartbeat"
@@ -128,6 +129,14 @@ type TaskError struct {
 	SessionID string `json:"sessionId"`
 	ChannelID string `json:"channelId"`
 	Error     string `json:"error"`
+}
+
+// TaskCancelled tells the relay/browser that a task was interrupted by the user.
+type TaskCancelled struct {
+	Type      string `json:"type"`
+	TaskID    string `json:"taskId"`
+	SessionID string `json:"sessionId"`
+	ChannelID string `json:"channelId"`
 }
 
 // PermissionRequest is Claude asking for tool approval.

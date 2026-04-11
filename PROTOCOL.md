@@ -132,6 +132,16 @@ High-frequency Claude event. The `event` field is an opaque JSON object passed t
 | channelId | string |
 | error | string |
 
+### `taskCancelled`
+Sent when the user interrupts a running task via `stop`.
+
+| Field | Type |
+|---|---|
+| type | "taskCancelled" |
+| taskId | string |
+| sessionId | uuid |
+| channelId | string |
+
 ### `permissionRequest`
 
 | Field | Type |
