@@ -223,6 +223,85 @@ func TestUpdateAvailableRoundTrip(t *testing.T) {
 	}
 }
 
+func TestTraceparentRoundTrip(t *testing.T) {
+	tp := "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+
+	task := &Task{
+		Type:           MsgTypeTask,
+		TaskID:         "11111111-1111-1111-1111-111111111111",
+		SessionID:      "22222222-2222-2222-2222-222222222222",
+		ChannelID:      "ch-1",
+		Prompt:         "hello",
+		Model:          "claude-opus-4-6[1m]",
+		Effort:         "max",
+		PermissionMode: "acceptEdits",
+		CWD:            "/tmp",
+		Traceparent:    tp,
+	}
+
+	data, err := json.Marshal(task)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+
+	env, err := ParseEnvelope(data)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+
+	got, ok := env.Payload.(*Task)
+	if !ok {
+		t.Fatalf("expected *Task, got %T", env.Payload)
+	}
+	if got.Traceparent != tp {
+		t.Errorf("traceparent mismatch: want %s, got %s", tp, got.Traceparent)
+	}
+}
+
+func TestTraceparentOmittedWhenEmpty(t *testing.T) {
+	task := &Task{
+		Type:           MsgTypeTask,
+		TaskID:         "11111111-1111-1111-1111-111111111111",
+		SessionID:      "22222222-2222-2222-2222-222222222222",
+		ChannelID:      "ch-1",
+		Prompt:         "hello",
+		Model:          "claude-opus-4-6[1m]",
+		Effort:         "max",
+		PermissionMode: "acceptEdits",
+		CWD:            "/tmp",
+	}
+
+	data, err := json.Marshal(task)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+
+	var raw map[string]any
+	_ = json.Unmarshal(data, &raw)
+	if _, exists := raw["traceparent"]; exists {
+		t.Error("traceparent should be omitted when empty")
+	}
+}
+
+func TestTraceID(t *testing.T) {
+	cases := []struct {
+		traceparent string
+		want        string
+	}{
+		{"00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01", "4bf92f3577b34da6a3ce929d0e0e4736"},
+		{"", ""},
+		{"invalid", ""},
+		{"00-short-00f067aa0ba902b7-01", ""},
+	}
+
+	for _, tc := range cases {
+		got := TraceID(tc.traceparent)
+		if got != tc.want {
+			t.Errorf("TraceID(%q) = %q, want %q", tc.traceparent, got, tc.want)
+		}
+	}
+}
+
 func TestMachineStatusRoundTrip(t *testing.T) {
 	ms := &MachineStatus{
 		Type:      MsgTypeMachineStatus,

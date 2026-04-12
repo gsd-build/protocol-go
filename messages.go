@@ -47,6 +47,7 @@ type Task struct {
 	PersonaSystemPrompt string `json:"personaSystemPrompt,omitempty"`
 	CWD                 string `json:"cwd"`
 	ClaudeSessionID     string `json:"claudeSessionId,omitempty"` // passed to --resume
+	Traceparent         string `json:"traceparent,omitempty"`     // W3C trace context
 }
 
 // Stop asks the daemon to interrupt the current Claude process for a session.
@@ -100,15 +101,17 @@ type Stream struct {
 	ChannelID      string          `json:"channelId"`
 	SequenceNumber int64           `json:"sequenceNumber"`
 	Event          json.RawMessage `json:"event"`
+	Traceparent    string          `json:"traceparent,omitempty"` // W3C trace context
 }
 
 // TaskStarted signals the daemon began processing a task.
 type TaskStarted struct {
-	Type      string `json:"type"`
-	TaskID    string `json:"taskId"`
-	SessionID string `json:"sessionId"`
-	ChannelID string `json:"channelId"`
-	StartedAt string `json:"startedAt"`
+	Type        string `json:"type"`
+	TaskID      string `json:"taskId"`
+	SessionID   string `json:"sessionId"`
+	ChannelID   string `json:"channelId"`
+	StartedAt   string `json:"startedAt"`
+	Traceparent string `json:"traceparent,omitempty"` // W3C trace context
 }
 
 // TaskComplete reports final result metadata.
@@ -123,23 +126,26 @@ type TaskComplete struct {
 	CostUSD         string `json:"costUsd"`
 	DurationMs      int    `json:"durationMs"`
 	ResultSummary   string `json:"resultSummary,omitempty"`
+	Traceparent     string `json:"traceparent,omitempty"` // W3C trace context
 }
 
 // TaskError reports a failure.
 type TaskError struct {
-	Type      string `json:"type"`
-	TaskID    string `json:"taskId"`
-	SessionID string `json:"sessionId"`
-	ChannelID string `json:"channelId"`
-	Error     string `json:"error"`
+	Type        string `json:"type"`
+	TaskID      string `json:"taskId"`
+	SessionID   string `json:"sessionId"`
+	ChannelID   string `json:"channelId"`
+	Error       string `json:"error"`
+	Traceparent string `json:"traceparent,omitempty"` // W3C trace context
 }
 
 // TaskCancelled tells the relay/browser that a task was interrupted by the user.
 type TaskCancelled struct {
-	Type      string `json:"type"`
-	TaskID    string `json:"taskId"`
-	SessionID string `json:"sessionId"`
-	ChannelID string `json:"channelId"`
+	Type        string `json:"type"`
+	TaskID      string `json:"taskId"`
+	SessionID   string `json:"sessionId"`
+	ChannelID   string `json:"channelId"`
+	Traceparent string `json:"traceparent,omitempty"` // W3C trace context
 }
 
 // PermissionRequest is Claude asking for tool approval.
