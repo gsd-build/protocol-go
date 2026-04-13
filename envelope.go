@@ -3,6 +3,8 @@ package protocol
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
+	"strings"
 )
 
 // Envelope is a parsed message ready for type-switching.
@@ -14,69 +16,133 @@ type Envelope struct {
 // ParseEnvelope reads raw JSON, looks at the type field, and unmarshals
 // into the correct concrete struct.
 func ParseEnvelope(data []byte) (*Envelope, error) {
-	var peek struct {
-		Type string `json:"type"`
-	}
-	if err := json.Unmarshal(data, &peek); err != nil {
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(data, &raw); err != nil {
 		return nil, fmt.Errorf("envelope: %w", err)
 	}
 
-	var payload any
-	switch peek.Type {
-	case MsgTypeTask:
-		payload = &Task{}
-	case MsgTypeStop:
-		payload = &Stop{}
-	case MsgTypePermissionResponse:
-		payload = &PermissionResponse{}
-	case MsgTypeQuestionResponse:
-		payload = &QuestionResponse{}
-	case MsgTypeBrowseDir:
-		payload = &BrowseDir{}
-	case MsgTypeReadFile:
-		payload = &ReadFile{}
-	case MsgTypeMkDir:
-		payload = &MkDir{}
-	case MsgTypeMkDirResult:
-		payload = &MkDirResult{}
-	case MsgTypeStream:
-		payload = &Stream{}
-	case MsgTypeTaskStarted:
-		payload = &TaskStarted{}
-	case MsgTypeTaskComplete:
-		payload = &TaskComplete{}
-	case MsgTypeTaskError:
-		payload = &TaskError{}
-	case MsgTypeTaskCancelled:
-		payload = &TaskCancelled{}
-	case MsgTypePermissionRequest:
-		payload = &PermissionRequest{}
-	case MsgTypeQuestion:
-		payload = &Question{}
-	case MsgTypeHeartbeat:
-		payload = &Heartbeat{}
-	case MsgTypeBrowseDirResult:
-		payload = &BrowseDirResult{}
-	case MsgTypeReadFileResult:
-		payload = &ReadFileResult{}
-	case MsgTypeHello:
-		payload = &Hello{}
-	case MsgTypeWelcome:
-		payload = &Welcome{}
-	case MsgTypeMachineStatus:
-		payload = &MachineStatus{}
-	case MsgTypeUpdateAvailable:
-		payload = &UpdateAvailable{}
-	default:
-		return nil, fmt.Errorf("unknown message type: %q", peek.Type)
+	rawType, ok := raw["type"]
+	if !ok {
+		return nil, fmt.Errorf("envelope: missing type")
 	}
 
-	if err := json.Unmarshal(data, payload); err != nil {
-		return nil, fmt.Errorf("unmarshal %s: %w", peek.Type, err)
+	var msgType string
+	if err := json.Unmarshal(rawType, &msgType); err != nil {
+		return nil, fmt.Errorf("envelope type: %w", err)
+	}
+
+	payload, err := payloadForType(msgType)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := populatePayload(payload, raw); err != nil {
+		return nil, fmt.Errorf("unmarshal %s: %w", msgType, err)
 	}
 
 	return &Envelope{
-		Type:    peek.Type,
+		Type:    msgType,
 		Payload: payload,
 	}, nil
+}
+
+func payloadForType(msgType string) (any, error) {
+	switch msgType {
+	case MsgTypeTask:
+		return &Task{}, nil
+	case MsgTypeStop:
+		return &Stop{}, nil
+	case MsgTypePermissionResponse:
+		return &PermissionResponse{}, nil
+	case MsgTypeQuestionResponse:
+		return &QuestionResponse{}, nil
+	case MsgTypeBrowseDir:
+		return &BrowseDir{}, nil
+	case MsgTypeReadFile:
+		return &ReadFile{}, nil
+	case MsgTypeMkDir:
+		return &MkDir{}, nil
+	case MsgTypeMkDirResult:
+		return &MkDirResult{}, nil
+	case MsgTypeStream:
+		return &Stream{}, nil
+	case MsgTypeTaskStarted:
+		return &TaskStarted{}, nil
+	case MsgTypeTaskComplete:
+		return &TaskComplete{}, nil
+	case MsgTypeTaskError:
+		return &TaskError{}, nil
+	case MsgTypeTaskCancelled:
+		return &TaskCancelled{}, nil
+	case MsgTypePermissionRequest:
+		return &PermissionRequest{}, nil
+	case MsgTypeQuestion:
+		return &Question{}, nil
+	case MsgTypeHeartbeat:
+		return &Heartbeat{}, nil
+	case MsgTypeBrowseDirResult:
+		return &BrowseDirResult{}, nil
+	case MsgTypeReadFileResult:
+		return &ReadFileResult{}, nil
+	case MsgTypeHello:
+		return &Hello{}, nil
+	case MsgTypeWelcome:
+		return &Welcome{}, nil
+	case MsgTypeMachineStatus:
+		return &MachineStatus{}, nil
+	case MsgTypeUpdateAvailable:
+		return &UpdateAvailable{}, nil
+	default:
+		return nil, fmt.Errorf("unknown message type: %q", msgType)
+	}
+}
+
+func populatePayload(dst any, raw map[string]json.RawMessage) error {
+	value := reflect.ValueOf(dst)
+	if value.Kind() != reflect.Pointer || value.Elem().Kind() != reflect.Struct {
+		return fmt.Errorf("payload must be a pointer to a struct, got %T", dst)
+	}
+	return populateStruct(value.Elem(), raw)
+}
+
+func populateStruct(dst reflect.Value, raw map[string]json.RawMessage) error {
+	dstType := dst.Type()
+	for i := 0; i < dstType.NumField(); i++ {
+		fieldType := dstType.Field(i)
+		if !fieldType.IsExported() {
+			continue
+		}
+
+		fieldName, skip := jsonFieldName(fieldType)
+		if skip {
+			continue
+		}
+
+		fieldData, ok := raw[fieldName]
+		if !ok {
+			continue
+		}
+
+		if err := json.Unmarshal(fieldData, dst.Field(i).Addr().Interface()); err != nil {
+			return fmt.Errorf("%s: %w", fieldName, err)
+		}
+	}
+	return nil
+}
+
+func jsonFieldName(field reflect.StructField) (string, bool) {
+	tag := field.Tag.Get("json")
+	if tag == "-" {
+		return "", true
+	}
+
+	if tag != "" {
+		name, _, _ := strings.Cut(tag, ",")
+		if name == "" {
+			return field.Name, false
+		}
+		return name, false
+	}
+
+	return field.Name, false
 }
