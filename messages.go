@@ -46,8 +46,9 @@ type Task struct {
 	PermissionMode      string `json:"permissionMode"`
 	PersonaSystemPrompt string `json:"personaSystemPrompt,omitempty"`
 	CWD                 string `json:"cwd"`
-	ClaudeSessionID     string `json:"claudeSessionId,omitempty"` // passed to --resume
-	Traceparent         string `json:"traceparent,omitempty"`     // W3C trace context
+	ClaudeSessionID     string   `json:"claudeSessionId,omitempty"` // passed to --resume
+	Traceparent         string   `json:"traceparent,omitempty"`     // W3C trace context
+	ImageURLs           []string `json:"imageUrls,omitempty"`       // user-attached image URLs
 }
 
 // Stop asks the daemon to interrupt the current Claude process for a session.
