@@ -33,6 +33,8 @@ Dispatch a user message to a session.
 | personaSystemPrompt | string? | Injected via `--append-system-prompt` |
 | cwd | string | Absolute path on the daemon's machine |
 | claudeSessionId | string? | Pass to `claude -p --resume` to continue an existing Claude conversation. Empty for the first turn. |
+| requestId | uuid? | Optional root correlation ID for request-scoped logging. |
+| traceparent | string? | W3C trace context. |
 
 ### `stop`
 Interrupt the current Claude process for a session.
@@ -96,6 +98,8 @@ High-frequency Claude event. The `event` field is an opaque JSON object passed t
 | channelId | string |
 | sequenceNumber | int64 |
 | event | object |
+| requestId | uuid? | Optional root correlation ID for request-scoped logging. |
+| traceparent | string? | W3C trace context. |
 
 ### `taskStarted`
 
@@ -106,6 +110,8 @@ High-frequency Claude event. The `event` field is an opaque JSON object passed t
 | sessionId | uuid |
 | channelId | string |
 | startedAt | iso8601 string |
+| requestId | uuid? | Optional root correlation ID for request-scoped logging. |
+| traceparent | string? | W3C trace context. |
 
 ### `taskComplete`
 
@@ -121,6 +127,8 @@ High-frequency Claude event. The `event` field is an opaque JSON object passed t
 | costUsd | string | Decimal string to avoid float precision loss |
 | durationMs | int |
 | resultSummary | string? |
+| requestId | uuid? | Optional root correlation ID for request-scoped logging. |
+| traceparent | string? | W3C trace context. |
 
 ### `taskError`
 
@@ -131,6 +139,8 @@ High-frequency Claude event. The `event` field is an opaque JSON object passed t
 | sessionId | uuid |
 | channelId | string |
 | error | string |
+| requestId | uuid? | Optional root correlation ID for request-scoped logging. |
+| traceparent | string? | W3C trace context. |
 
 ### `taskCancelled`
 Sent when the user interrupts a running task via `stop`.
@@ -141,6 +151,8 @@ Sent when the user interrupts a running task via `stop`.
 | taskId | string |
 | sessionId | uuid |
 | channelId | string |
+| requestId | uuid? | Optional root correlation ID for request-scoped logging. |
+| traceparent | string? | W3C trace context. |
 
 ### `permissionRequest`
 

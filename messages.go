@@ -36,19 +36,20 @@ const (
 
 // Task is sent from the browser to the daemon to dispatch a user message.
 type Task struct {
-	Type                string `json:"type"`
-	TaskID              string `json:"taskId"`
-	SessionID           string `json:"sessionId"`
-	ChannelID           string `json:"channelId"`
-	Prompt              string `json:"prompt"`
-	Model               string `json:"model"`
-	Effort              string `json:"effort"`
-	PermissionMode      string `json:"permissionMode"`
-	PersonaSystemPrompt string `json:"personaSystemPrompt,omitempty"`
-	CWD                 string `json:"cwd"`
+	Type                string   `json:"type"`
+	TaskID              string   `json:"taskId"`
+	SessionID           string   `json:"sessionId"`
+	ChannelID           string   `json:"channelId"`
+	Prompt              string   `json:"prompt"`
+	Model               string   `json:"model"`
+	Effort              string   `json:"effort"`
+	PermissionMode      string   `json:"permissionMode"`
+	PersonaSystemPrompt string   `json:"personaSystemPrompt,omitempty"`
+	CWD                 string   `json:"cwd"`
 	ClaudeSessionID     string   `json:"claudeSessionId,omitempty"` // passed to --resume
-	Traceparent         string   `json:"traceparent,omitempty"`     // W3C trace context
-	ImageURLs           []string `json:"imageUrls,omitempty"`       // user-attached image URLs
+	RequestID           string   `json:"requestId,omitempty"`
+	Traceparent         string   `json:"traceparent,omitempty"` // W3C trace context
+	ImageURLs           []string `json:"imageUrls,omitempty"`   // user-attached image URLs
 }
 
 // Stop asks the daemon to interrupt the current Claude process for a session.
@@ -102,6 +103,7 @@ type Stream struct {
 	ChannelID      string          `json:"channelId"`
 	SequenceNumber int64           `json:"sequenceNumber"`
 	Event          json.RawMessage `json:"event"`
+	RequestID      string          `json:"requestId,omitempty"`
 	Traceparent    string          `json:"traceparent,omitempty"` // W3C trace context
 }
 
@@ -112,6 +114,7 @@ type TaskStarted struct {
 	SessionID   string `json:"sessionId"`
 	ChannelID   string `json:"channelId"`
 	StartedAt   string `json:"startedAt"`
+	RequestID   string `json:"requestId,omitempty"`
 	Traceparent string `json:"traceparent,omitempty"` // W3C trace context
 }
 
@@ -127,6 +130,7 @@ type TaskComplete struct {
 	CostUSD         string `json:"costUsd"`
 	DurationMs      int    `json:"durationMs"`
 	ResultSummary   string `json:"resultSummary,omitempty"`
+	RequestID       string `json:"requestId,omitempty"`
 	Traceparent     string `json:"traceparent,omitempty"` // W3C trace context
 }
 
@@ -137,6 +141,7 @@ type TaskError struct {
 	SessionID   string `json:"sessionId"`
 	ChannelID   string `json:"channelId"`
 	Error       string `json:"error"`
+	RequestID   string `json:"requestId,omitempty"`
 	Traceparent string `json:"traceparent,omitempty"` // W3C trace context
 }
 
@@ -146,6 +151,7 @@ type TaskCancelled struct {
 	TaskID      string `json:"taskId"`
 	SessionID   string `json:"sessionId"`
 	ChannelID   string `json:"channelId"`
+	RequestID   string `json:"requestId,omitempty"`
 	Traceparent string `json:"traceparent,omitempty"` // W3C trace context
 }
 

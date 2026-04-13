@@ -21,6 +21,8 @@ func TestEnvelopeRoundTrip(t *testing.T) {
 			PermissionMode:  "acceptEdits",
 			CWD:             "/tmp/project",
 			ClaudeSessionID: "claude-abc-123",
+			RequestID:       "33333333-3333-3333-3333-333333333333",
+			Traceparent:     "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
 		}},
 		{"stream", &Stream{
 			Type:           MsgTypeStream,
@@ -28,6 +30,8 @@ func TestEnvelopeRoundTrip(t *testing.T) {
 			ChannelID:      "ch-1",
 			SequenceNumber: 42,
 			Event:          json.RawMessage(`{"delta":{"text":"hi"}}`),
+			RequestID:      "33333333-3333-3333-3333-333333333333",
+			Traceparent:    "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
 		}},
 		{"hello", &Hello{
 			Type:          MsgTypeHello,
@@ -46,6 +50,34 @@ func TestEnvelopeRoundTrip(t *testing.T) {
 			OutputTokens:    50,
 			CostUSD:         "0.0150",
 			DurationMs:      1234,
+			RequestID:       "33333333-3333-3333-3333-333333333333",
+			Traceparent:     "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+		}},
+		{"taskStarted", &TaskStarted{
+			Type:        MsgTypeTaskStarted,
+			TaskID:      "11111111-1111-1111-1111-111111111111",
+			SessionID:   "22222222-2222-2222-2222-222222222222",
+			ChannelID:   "ch-1",
+			StartedAt:   "2026-04-13T12:00:00Z",
+			RequestID:   "33333333-3333-3333-3333-333333333333",
+			Traceparent: "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+		}},
+		{"taskError", &TaskError{
+			Type:        MsgTypeTaskError,
+			TaskID:      "11111111-1111-1111-1111-111111111111",
+			SessionID:   "22222222-2222-2222-2222-222222222222",
+			ChannelID:   "ch-1",
+			Error:       "boom",
+			RequestID:   "33333333-3333-3333-3333-333333333333",
+			Traceparent: "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+		}},
+		{"taskCancelled", &TaskCancelled{
+			Type:        MsgTypeTaskCancelled,
+			TaskID:      "11111111-1111-1111-1111-111111111111",
+			SessionID:   "22222222-2222-2222-2222-222222222222",
+			ChannelID:   "ch-1",
+			RequestID:   "33333333-3333-3333-3333-333333333333",
+			Traceparent: "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
 		}},
 	}
 
@@ -223,7 +255,8 @@ func TestUpdateAvailableRoundTrip(t *testing.T) {
 	}
 }
 
-func TestTraceparentRoundTrip(t *testing.T) {
+func TestRequestIDRoundTrip(t *testing.T) {
+	requestID := "33333333-3333-3333-3333-333333333333"
 	tp := "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
 
 	task := &Task{
@@ -236,6 +269,7 @@ func TestTraceparentRoundTrip(t *testing.T) {
 		Effort:         "max",
 		PermissionMode: "acceptEdits",
 		CWD:            "/tmp",
+		RequestID:      requestID,
 		Traceparent:    tp,
 	}
 
@@ -252,6 +286,9 @@ func TestTraceparentRoundTrip(t *testing.T) {
 	got, ok := env.Payload.(*Task)
 	if !ok {
 		t.Fatalf("expected *Task, got %T", env.Payload)
+	}
+	if got.RequestID != requestID {
+		t.Errorf("requestId mismatch: want %s, got %s", requestID, got.RequestID)
 	}
 	if got.Traceparent != tp {
 		t.Errorf("traceparent mismatch: want %s, got %s", tp, got.Traceparent)
