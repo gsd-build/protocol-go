@@ -98,6 +98,8 @@ High-frequency Claude event. The `event` field is an opaque JSON object passed t
 | channelId | string |
 | sequenceNumber | int64 |
 | event | object |
+| requestId | uuid? | Optional root correlation ID for request-scoped logging. |
+| traceparent | string? | W3C trace context. |
 
 ### `taskStarted`
 

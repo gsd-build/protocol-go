@@ -103,6 +103,7 @@ type Stream struct {
 	ChannelID      string          `json:"channelId"`
 	SequenceNumber int64           `json:"sequenceNumber"`
 	Event          json.RawMessage `json:"event"`
+	RequestID      string          `json:"requestId,omitempty"`
 	Traceparent    string          `json:"traceparent,omitempty"` // W3C trace context
 }
 

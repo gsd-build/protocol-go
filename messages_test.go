@@ -30,6 +30,8 @@ func TestEnvelopeRoundTrip(t *testing.T) {
 			ChannelID:      "ch-1",
 			SequenceNumber: 42,
 			Event:          json.RawMessage(`{"delta":{"text":"hi"}}`),
+			RequestID:      "33333333-3333-3333-3333-333333333333",
+			Traceparent:    "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
 		}},
 		{"hello", &Hello{
 			Type:          MsgTypeHello,
