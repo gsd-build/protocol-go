@@ -86,6 +86,16 @@ Interrupt the current Claude process for a session.
 | path | string |
 | maxBytes | int? | Defaults to 512 KiB |
 
+### `mkDir`
+
+| Field | Type |
+|---|---|
+| type | "mkDir" |
+| requestId | uuid |
+| channelId | string |
+| machineId | uuid |
+| path | string |
+
 ## Daemon → Browser messages
 
 ### `stream`
@@ -100,6 +110,14 @@ High-frequency Claude event. The `event` field is an opaque JSON object passed t
 | event | object |
 | requestId | uuid? | Optional root correlation ID for request-scoped logging. |
 | traceparent | string? | W3C trace context. |
+
+### Delivery semantics
+
+Live WebSocket delivery is best-effort. The relay forwards frames immediately
+and persists session-scoped history to Postgres on a separate path. Browser
+reconnect recovery happens by reloading persisted messages by session and
+sequence from the database. There is no daemon ↔ relay ack/replay/WAL handshake
+in protocol version 1.
 
 ### `taskStarted`
 
@@ -214,6 +232,16 @@ Sent when the user interrupts a running task via `stop`.
 | truncated | boolean? |
 | error | string? |
 
+### `mkDirResult`
+
+| Field | Type |
+|---|---|
+| type | "mkDirResult" |
+| requestId | uuid |
+| channelId | string |
+| ok | boolean |
+| error | string? |
+
 ## Daemon ↔ Relay control messages
 
 ### `hello` (daemon → relay, first frame after connect)
@@ -225,31 +253,11 @@ Sent when the user interrupts a running task via `stop`.
 | daemonVersion | string |
 | os | string |
 | arch | string |
-| lastSequenceBySession | map<uuid, int64> | Highest sequence the daemon has in local WAL per session |
+| activeTasks | string[]? | Task IDs the daemon still considers in flight |
 
 ### `welcome` (relay → daemon, response to hello)
 
 | Field | Type |
 |---|---|
 | type | "welcome" |
-| ackedSequencesBySession | map<uuid, int64> | Highest sequence persisted to Supabase per session |
-
-### `ack` (relay → daemon)
-
-| Field | Type |
-|---|---|
-| type | "ack" |
-| sessionId | uuid |
-| sequenceNumber | int64 |
-
-Daemon may prune WAL entries ≤ `sequenceNumber` for this session.
-
-### `replayRequest` (relay → daemon)
-
-| Field | Type |
-|---|---|
-| type | "replayRequest" |
-| sessionId | uuid |
-| fromSequence | int64 |
-
-Daemon replays all WAL entries with sequence > fromSequence for this session.
+| latestDaemonVersion | string? | Optional latest daemon version for update prompts |
