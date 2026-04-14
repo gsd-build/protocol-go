@@ -165,14 +165,23 @@ type PermissionRequest struct {
 	ToolInput json.RawMessage `json:"toolInput"`
 }
 
+// QuestionOption is a structured answer choice for AskUserQuestion.
+type QuestionOption struct {
+	Label       string `json:"label"`
+	Description string `json:"description,omitempty"`
+	Preview     string `json:"preview,omitempty"`
+}
+
 // Question is Claude asking the user for input.
 type Question struct {
-	Type      string   `json:"type"`
-	SessionID string   `json:"sessionId"`
-	ChannelID string   `json:"channelId"`
-	RequestID string   `json:"requestId"`
-	Question  string   `json:"question"`
-	Options   []string `json:"options,omitempty"`
+	Type        string           `json:"type"`
+	SessionID   string           `json:"sessionId"`
+	ChannelID   string           `json:"channelId"`
+	RequestID   string           `json:"requestId"`
+	Question    string           `json:"question"`
+	Header      string           `json:"header,omitempty"`
+	MultiSelect bool             `json:"multiSelect,omitempty"`
+	Options     []QuestionOption `json:"options,omitempty"`
 }
 
 // Heartbeat is the daemon's 30s health pulse.

@@ -79,6 +79,33 @@ func TestEnvelopeRoundTrip(t *testing.T) {
 			RequestID:   "33333333-3333-3333-3333-333333333333",
 			Traceparent: "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
 		}},
+		{"question", &Question{
+			Type:        MsgTypeQuestion,
+			SessionID:   "22222222-2222-2222-2222-222222222222",
+			ChannelID:   "ch-1",
+			RequestID:   "33333333-3333-3333-3333-333333333333",
+			Question:    "Which library should we use?",
+			Header:      "Library",
+			MultiSelect: true,
+			Options: []QuestionOption{
+				{
+					Label:       "date-fns",
+					Description: "Tree-shakable, functional API, smaller bundle",
+					Preview:     "import { format } from 'date-fns'",
+				},
+				{
+					Label:       "dayjs",
+					Description: "Moment-style API, plugin ecosystem",
+				},
+			},
+		}},
+		{"questionResponse", &QuestionResponse{
+			Type:      MsgTypeQuestionResponse,
+			SessionID: "22222222-2222-2222-2222-222222222222",
+			ChannelID: "ch-1",
+			RequestID: "33333333-3333-3333-3333-333333333333",
+			Answer:    `["date-fns","custom note"]`,
+		}},
 	}
 
 	for _, tc := range cases {

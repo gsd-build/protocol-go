@@ -192,7 +192,9 @@ Sent when the user interrupts a running task via `stop`.
 | channelId | string |
 | requestId | uuid |
 | question | string |
-| options | string[]? |
+| header | string? |
+| multiSelect | boolean? |
+| options | { label: string, description?: string, preview?: string }[]? |
 
 ### `heartbeat`
 
