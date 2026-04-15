@@ -30,6 +30,10 @@ const (
 	MsgTypeHello   = "hello"
 	MsgTypeWelcome = "welcome"
 
+	MsgTypeSyncCrons      = "syncCrons"
+	MsgTypeCronInventory  = "cronInventory"
+	MsgTypeCronExecResult = "cronExecResult"
+
 	MsgTypeMachineStatus   = "machineStatus"
 	MsgTypeUpdateAvailable = "updateAvailable"
 )
@@ -255,6 +259,60 @@ type Hello struct {
 type Welcome struct {
 	Type                string `json:"type"`
 	LatestDaemonVersion string `json:"latestDaemonVersion,omitempty"`
+}
+
+// SyncCrons is sent from the relay to a daemon to reconcile cron config.
+type SyncCrons struct {
+	Type      string     `json:"type"`
+	MachineID string     `json:"machineId"`
+	Jobs      []CronSpec `json:"jobs"`
+	SentAt    string     `json:"sentAt"`
+}
+
+// CronSpec is the server-owned configuration for one daemon-managed cron job.
+type CronSpec struct {
+	ID              string `json:"id"`
+	Name            string `json:"name"`
+	CronExpression  string `json:"cronExpression"`
+	Prompt          string `json:"prompt"`
+	Mode            string `json:"mode"`
+	Model           string `json:"model"`
+	Effort          string `json:"effort"`
+	ProjectID       string `json:"projectId"`
+	TargetSessionID string `json:"targetSessionId,omitempty"`
+	Enabled         bool   `json:"enabled"`
+}
+
+// CronInventory is sent from the daemon to report its local cron view.
+type CronInventory struct {
+	Type      string           `json:"type"`
+	MachineID string           `json:"machineId"`
+	Items     []CronLocalState `json:"items"`
+	Timestamp string           `json:"timestamp"`
+}
+
+// CronLocalState describes one locally-known cron job on the daemon.
+type CronLocalState struct {
+	ID              string `json:"id"`
+	Name            string `json:"name"`
+	CronExpression  string `json:"cronExpression"`
+	Enabled         bool   `json:"enabled"`
+	SyncedAt        string `json:"syncedAt"`
+	LastRunAt       string `json:"lastRunAt,omitempty"`
+	NextRunAt       string `json:"nextRunAt,omitempty"`
+	LocallyModified bool   `json:"locallyModified"`
+}
+
+// CronExecResult reports the result of a daemon-run cron execution.
+type CronExecResult struct {
+	Type       string `json:"type"`
+	MachineID  string `json:"machineId"`
+	CronJobID  string `json:"cronJobId"`
+	TaskID     string `json:"taskId"`
+	Status     string `json:"status"`
+	Error      string `json:"error,omitempty"`
+	DurationMs int64  `json:"durationMs,omitempty"`
+	Timestamp  string `json:"timestamp"`
 }
 
 // MachineStatus is pushed to all connected browsers when a daemon connects or disconnects.
