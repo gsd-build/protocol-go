@@ -94,6 +94,16 @@ func payloadForType(msgType string) (any, error) {
 		return &CronInventory{}, nil
 	case MsgTypeCronExecResult:
 		return &CronExecResult{}, nil
+	case MsgTypeSkillInventory:
+		return &SkillInventory{}, nil
+	case MsgTypeSkillContentRequest:
+		return &SkillContentRequest{}, nil
+	case MsgTypeSkillContentUpload:
+		return &SkillContentUpload{}, nil
+	case MsgTypeSkillPush:
+		return &SkillPush{}, nil
+	case MsgTypeSkillDelete:
+		return &SkillDelete{}, nil
 	case MsgTypeMachineStatus:
 		return &MachineStatus{}, nil
 	case MsgTypeUpdateAvailable:
