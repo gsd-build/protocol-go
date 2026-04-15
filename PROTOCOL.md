@@ -263,3 +263,71 @@ Sent when the user interrupts a running task via `stop`.
 |---|---|
 | type | "welcome" |
 | latestDaemonVersion | string? | Optional latest daemon version for update prompts |
+
+### `syncCrons` (relay → daemon)
+
+Sent after daemon connect and after cron config mutations so the daemon can
+reconcile its local cron config directory to the server-owned config set.
+
+| Field | Type |
+|---|---|
+| type | "syncCrons" |
+| machineId | uuid |
+| jobs | CronSpec[] |
+| sentAt | iso8601 string |
+
+`CronSpec`:
+
+| Field | Type |
+|---|---|
+| id | uuid |
+| name | string |
+| cronExpression | string |
+| prompt | string |
+| mode | string |
+| model | string |
+| effort | string |
+| projectId | uuid |
+| targetSessionId | uuid? |
+| enabled | boolean |
+
+### `cronInventory` (daemon → relay)
+
+Sent after daemon reconciliation and on future local inventory changes so the
+relay/browser can show the daemon's current cron state.
+
+| Field | Type |
+|---|---|
+| type | "cronInventory" |
+| machineId | uuid |
+| items | CronLocalState[] |
+| timestamp | iso8601 string |
+
+`CronLocalState`:
+
+| Field | Type |
+|---|---|
+| id | uuid |
+| name | string |
+| cronExpression | string |
+| enabled | boolean |
+| syncedAt | iso8601 string |
+| lastRunAt | iso8601 string? |
+| nextRunAt | iso8601 string? |
+| locallyModified | boolean |
+
+### `cronExecResult` (daemon → relay)
+
+Sent after a daemon-managed cron execution finishes so the relay can persist the
+result and fan it out to browser subscribers.
+
+| Field | Type |
+|---|---|
+| type | "cronExecResult" |
+| machineId | uuid |
+| cronJobId | uuid |
+| taskId | uuid |
+| status | string |
+| error | string? |
+| durationMs | int64? |
+| timestamp | iso8601 string |
