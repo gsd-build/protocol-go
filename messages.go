@@ -386,11 +386,14 @@ type SkillDelete struct {
 	CloudRevision int64  `json:"cloudRevision"`
 }
 
-// MachineStatus is pushed to all connected browsers when a daemon connects or disconnects.
+// MachineStatus is pushed to all connected browsers when machine presence changes.
 type MachineStatus struct {
-	Type      string `json:"type"`
-	MachineID string `json:"machineId"`
-	Online    bool   `json:"online"`
+	Type          string `json:"type"`
+	MachineID     string `json:"machineId"`
+	State         string `json:"state"`
+	PreviousState string `json:"previousState,omitempty"`
+	Reason        string `json:"reason,omitempty"`
+	OccurredAt    string `json:"occurredAt"`
 }
 
 // UpdateAvailable is sent by the daemon to the relay (which forwards to browsers)

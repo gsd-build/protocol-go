@@ -649,30 +649,31 @@ func TestTraceID(t *testing.T) {
 }
 
 func TestMachineStatusRoundTrip(t *testing.T) {
-	ms := &MachineStatus{
-		Type:      MsgTypeMachineStatus,
-		MachineID: "m-1",
-		Online:    true,
+	msg := &MachineStatus{
+		Type:          MsgTypeMachineStatus,
+		MachineID:     "machine-123",
+		State:         "reconnecting",
+		PreviousState: "online",
+		Reason:        "lease_expired",
+		OccurredAt:    "2026-04-15T12:00:00Z",
 	}
 
-	data, err := json.Marshal(ms)
+	buf, err := json.Marshal(msg)
 	if err != nil {
 		t.Fatalf("marshal: %v", err)
 	}
 
-	env, err := ParseEnvelope(data)
+	env, err := ParseEnvelope(buf)
 	if err != nil {
-		t.Fatalf("parse: %v", err)
+		t.Fatalf("parse envelope: %v", err)
 	}
 
 	got, ok := env.Payload.(*MachineStatus)
 	if !ok {
-		t.Fatalf("expected *MachineStatus, got %T", env.Payload)
+		t.Fatalf("payload type = %T", env.Payload)
 	}
-	if got.MachineID != "m-1" {
-		t.Errorf("expected m-1, got %s", got.MachineID)
-	}
-	if !got.Online {
-		t.Error("expected online=true")
+
+	if got.State != "reconnecting" || got.PreviousState != "online" || got.Reason != "lease_expired" {
+		t.Fatalf("unexpected payload: %+v", got)
 	}
 }
