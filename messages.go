@@ -42,6 +42,20 @@ const (
 
 	MsgTypeMachineStatus   = "machineStatus"
 	MsgTypeUpdateAvailable = "updateAvailable"
+
+	MsgTypeWorkflowRun             = "workflowRun"
+	MsgTypeWorkflowStop            = "workflowStop"
+	MsgTypeWorkflowDesignChat      = "workflowDesignChat"
+
+	MsgTypeWorkflowStarted            = "workflowStarted"
+	MsgTypeWorkflowNodeStarted        = "workflowNodeStarted"
+	MsgTypeWorkflowNodeStream         = "workflowNodeStream"
+	MsgTypeWorkflowNodeComplete       = "workflowNodeComplete"
+	MsgTypeWorkflowNodeError          = "workflowNodeError"
+	MsgTypeWorkflowComplete           = "workflowComplete"
+	MsgTypeWorkflowError              = "workflowError"
+	MsgTypeWorkflowDesignChatStream   = "workflowDesignChatStream"
+	MsgTypeWorkflowDesignChatComplete = "workflowDesignChatComplete"
 )
 
 // Task is sent from the browser to the daemon to dispatch a user message.
@@ -104,6 +118,115 @@ type ReadFile struct {
 	MachineID string `json:"machineId"`
 	Path      string `json:"path"`
 	MaxBytes  int    `json:"maxBytes,omitempty"`
+}
+
+// WorkflowRun tells the daemon to execute a workflow.
+// The Definition field contains the full workflow JSON (nodes, edges, ports)
+// injected by the relay from Postgres — the browser never sends it directly.
+type WorkflowRun struct {
+	Type          string          `json:"type"`
+	WorkflowRunID string          `json:"workflowRunId"`
+	WorkflowID    string          `json:"workflowId"`
+	ChannelID     string          `json:"channelId"`
+	MachineID     string          `json:"machineId,omitempty"`
+	Definition    json.RawMessage `json:"definition"` // WorkflowJSON
+	CWD           string          `json:"cwd"`
+	Traceparent   string          `json:"traceparent,omitempty"`
+}
+
+// WorkflowStop cancels a running workflow.
+type WorkflowStop struct {
+	Type          string `json:"type"`
+	WorkflowRunID string `json:"workflowRunId"`
+	ChannelID     string `json:"channelId"`
+}
+
+// WorkflowDesignChat sends a natural language editing request.
+type WorkflowDesignChat struct {
+	Type       string          `json:"type"`
+	WorkflowID string          `json:"workflowId"`
+	ChannelID  string          `json:"channelId"`
+	MachineID  string          `json:"machineId,omitempty"`
+	UserText   string          `json:"userText"`
+	Definition json.RawMessage `json:"definition"` // current WorkflowJSON
+	CWD        string          `json:"cwd"`
+}
+
+type WorkflowStarted struct {
+	Type          string `json:"type"`
+	WorkflowRunID string `json:"workflowRunId"`
+	ChannelID     string `json:"channelId"`
+	StartedAt     string `json:"startedAt"`
+}
+
+type WorkflowNodeStarted struct {
+	Type          string `json:"type"`
+	WorkflowRunID string `json:"workflowRunId"`
+	ChannelID     string `json:"channelId"`
+	NodeID        string `json:"nodeId"`
+	NodeLabel     string `json:"nodeLabel"`
+	StartedAt     string `json:"startedAt"`
+}
+
+type WorkflowNodeStream struct {
+	Type           string          `json:"type"`
+	WorkflowRunID  string          `json:"workflowRunId"`
+	ChannelID      string          `json:"channelId"`
+	NodeID         string          `json:"nodeId"`
+	SequenceNumber int64           `json:"sequenceNumber"`
+	Event          json.RawMessage `json:"event"`
+}
+
+type WorkflowNodeComplete struct {
+	Type              string            `json:"type"`
+	WorkflowRunID     string            `json:"workflowRunId"`
+	ChannelID         string            `json:"channelId"`
+	NodeID            string            `json:"nodeId"`
+	OutputPortResults map[string]string `json:"outputPortResults"`
+	InputTokens       int64             `json:"inputTokens"`
+	OutputTokens      int64             `json:"outputTokens"`
+	CostUSD           string            `json:"costUsd"`
+	DurationMs        int               `json:"durationMs"`
+}
+
+type WorkflowNodeError struct {
+	Type          string `json:"type"`
+	WorkflowRunID string `json:"workflowRunId"`
+	ChannelID     string `json:"channelId"`
+	NodeID        string `json:"nodeId"`
+	Error         string `json:"error"`
+	ExitCode      int    `json:"exitCode"`
+}
+
+type WorkflowComplete struct {
+	Type              string `json:"type"`
+	WorkflowRunID     string `json:"workflowRunId"`
+	ChannelID         string `json:"channelId"`
+	TotalInputTokens  int64  `json:"totalInputTokens"`
+	TotalOutputTokens int64  `json:"totalOutputTokens"`
+	TotalCostUSD      string `json:"totalCostUsd"`
+	DurationMs        int    `json:"durationMs"`
+}
+
+type WorkflowError struct {
+	Type          string `json:"type"`
+	WorkflowRunID string `json:"workflowRunId"`
+	ChannelID     string `json:"channelId"`
+	Error         string `json:"error"`
+}
+
+type WorkflowDesignChatStream struct {
+	Type       string          `json:"type"`
+	WorkflowID string          `json:"workflowId"`
+	ChannelID  string          `json:"channelId"`
+	Event      json.RawMessage `json:"event"`
+}
+
+type WorkflowDesignChatComplete struct {
+	Type       string          `json:"type"`
+	WorkflowID string          `json:"workflowId"`
+	ChannelID  string          `json:"channelId"`
+	Patches    json.RawMessage `json:"patches"` // JSON patch array
 }
 
 // Stream carries a single Claude event plus a sequence number.

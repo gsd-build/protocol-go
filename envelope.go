@@ -108,6 +108,30 @@ func payloadForType(msgType string) (any, error) {
 		return &MachineStatus{}, nil
 	case MsgTypeUpdateAvailable:
 		return &UpdateAvailable{}, nil
+	case MsgTypeWorkflowRun:
+		return &WorkflowRun{}, nil
+	case MsgTypeWorkflowStop:
+		return &WorkflowStop{}, nil
+	case MsgTypeWorkflowDesignChat:
+		return &WorkflowDesignChat{}, nil
+	case MsgTypeWorkflowStarted:
+		return &WorkflowStarted{}, nil
+	case MsgTypeWorkflowNodeStarted:
+		return &WorkflowNodeStarted{}, nil
+	case MsgTypeWorkflowNodeStream:
+		return &WorkflowNodeStream{}, nil
+	case MsgTypeWorkflowNodeComplete:
+		return &WorkflowNodeComplete{}, nil
+	case MsgTypeWorkflowNodeError:
+		return &WorkflowNodeError{}, nil
+	case MsgTypeWorkflowComplete:
+		return &WorkflowComplete{}, nil
+	case MsgTypeWorkflowError:
+		return &WorkflowError{}, nil
+	case MsgTypeWorkflowDesignChatStream:
+		return &WorkflowDesignChatStream{}, nil
+	case MsgTypeWorkflowDesignChatComplete:
+		return &WorkflowDesignChatComplete{}, nil
 	default:
 		return nil, fmt.Errorf("unknown message type: %q", msgType)
 	}

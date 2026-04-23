@@ -228,18 +228,150 @@ func TestEnvelopeRoundTrip(t *testing.T) {
 
 			// Parse both into maps and compare, to ignore field ordering
 			var original, final map[string]any
-			_ = json.Unmarshal(data, &original)
-			_ = json.Unmarshal(reMarshaled, &final)
+			if err := json.Unmarshal(data, &original); err != nil {
+				t.Fatalf("unmarshal original: %v", err)
+			}
+			if err := json.Unmarshal(reMarshaled, &final); err != nil {
+				t.Fatalf("unmarshal round trip: %v", err)
+			}
 
-			for k, v := range original {
-				got, ok := final[k]
-				if !ok {
-					t.Errorf("missing key %q after round trip", k)
-					continue
-				}
-				if !jsonEqual(v, got) {
-					t.Errorf("value mismatch for %q: want %v, got %v", k, v, got)
-				}
+			if !jsonEqual(original, final) {
+				t.Errorf("payload mismatch after round trip: want %v, got %v", original, final)
+			}
+		})
+	}
+}
+
+func TestWorkflowMessagesRoundTrip(t *testing.T) {
+	cases := []struct {
+		name string
+		typ  string
+		msg  any
+	}{
+		{"workflowRun", MsgTypeWorkflowRun, &WorkflowRun{
+			Type:          MsgTypeWorkflowRun,
+			WorkflowRunID: "workflow-run-1",
+			WorkflowID:    "workflow-1",
+			ChannelID:     "ch-1",
+			MachineID:     "machine-1",
+			Definition:    json.RawMessage(`{"nodes":[{"id":"node-1"}],"edges":[]}`),
+			CWD:           "/tmp/project",
+			Traceparent:   "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+		}},
+		{"workflowStop", MsgTypeWorkflowStop, &WorkflowStop{
+			Type:          MsgTypeWorkflowStop,
+			WorkflowRunID: "workflow-run-1",
+			ChannelID:     "ch-1",
+		}},
+		{"workflowStarted", MsgTypeWorkflowStarted, &WorkflowStarted{
+			Type:          MsgTypeWorkflowStarted,
+			WorkflowRunID: "workflow-run-1",
+			ChannelID:     "ch-1",
+			StartedAt:     "2026-04-13T12:00:00Z",
+		}},
+		{"workflowNodeStarted", MsgTypeWorkflowNodeStarted, &WorkflowNodeStarted{
+			Type:          MsgTypeWorkflowNodeStarted,
+			WorkflowRunID: "workflow-run-1",
+			ChannelID:     "ch-1",
+			NodeID:        "node-1",
+			NodeLabel:     "Plan",
+			StartedAt:     "2026-04-13T12:00:01Z",
+		}},
+		{"workflowNodeStream", MsgTypeWorkflowNodeStream, &WorkflowNodeStream{
+			Type:           MsgTypeWorkflowNodeStream,
+			WorkflowRunID:  "workflow-run-1",
+			ChannelID:      "ch-1",
+			NodeID:         "node-1",
+			SequenceNumber: 42,
+			Event:          json.RawMessage(`{"delta":{"text":"hello"}}`),
+		}},
+		{"workflowNodeComplete", MsgTypeWorkflowNodeComplete, &WorkflowNodeComplete{
+			Type:              MsgTypeWorkflowNodeComplete,
+			WorkflowRunID:     "workflow-run-1",
+			ChannelID:         "ch-1",
+			NodeID:            "node-1",
+			OutputPortResults: map[string]string{"result": "ok"},
+			InputTokens:       100,
+			OutputTokens:      50,
+			CostUSD:           "0.0150",
+			DurationMs:        1234,
+		}},
+		{"workflowNodeError", MsgTypeWorkflowNodeError, &WorkflowNodeError{
+			Type:          MsgTypeWorkflowNodeError,
+			WorkflowRunID: "workflow-run-1",
+			ChannelID:     "ch-1",
+			NodeID:        "node-1",
+			Error:         "boom",
+			ExitCode:      1,
+		}},
+		{"workflowComplete", MsgTypeWorkflowComplete, &WorkflowComplete{
+			Type:              MsgTypeWorkflowComplete,
+			WorkflowRunID:     "workflow-run-1",
+			ChannelID:         "ch-1",
+			TotalInputTokens:  200,
+			TotalOutputTokens: 100,
+			TotalCostUSD:      "0.0300",
+			DurationMs:        2468,
+		}},
+		{"workflowError", MsgTypeWorkflowError, &WorkflowError{
+			Type:          MsgTypeWorkflowError,
+			WorkflowRunID: "workflow-run-1",
+			ChannelID:     "ch-1",
+			Error:         "workflow failed",
+		}},
+		{"workflowDesignChat", MsgTypeWorkflowDesignChat, &WorkflowDesignChat{
+			Type:       MsgTypeWorkflowDesignChat,
+			WorkflowID: "workflow-1",
+			ChannelID:  "ch-1",
+			MachineID:  "machine-1",
+			UserText:   "Add a review node",
+			Definition: json.RawMessage(`{"nodes":[{"id":"node-1"}],"edges":[]}`),
+			CWD:        "/tmp/project",
+		}},
+		{"workflowDesignChatStream", MsgTypeWorkflowDesignChatStream, &WorkflowDesignChatStream{
+			Type:       MsgTypeWorkflowDesignChatStream,
+			WorkflowID: "workflow-1",
+			ChannelID:  "ch-1",
+			Event:      json.RawMessage(`{"delta":{"text":"Adding node"}}`),
+		}},
+		{"workflowDesignChatComplete", MsgTypeWorkflowDesignChatComplete, &WorkflowDesignChatComplete{
+			Type:       MsgTypeWorkflowDesignChatComplete,
+			WorkflowID: "workflow-1",
+			ChannelID:  "ch-1",
+			Patches:    json.RawMessage(`[{"op":"add","path":"/nodes/1","value":{"id":"node-2"}}]`),
+		}},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			data, err := json.Marshal(tc.msg)
+			if err != nil {
+				t.Fatalf("marshal: %v", err)
+			}
+
+			env, err := ParseEnvelope(data)
+			if err != nil {
+				t.Fatalf("parse envelope: %v", err)
+			}
+			if env.Type != tc.typ {
+				t.Fatalf("expected type %q, got %q", tc.typ, env.Type)
+			}
+
+			reMarshaled, err := json.Marshal(env.Payload)
+			if err != nil {
+				t.Fatalf("re-marshal: %v", err)
+			}
+
+			var original, final map[string]any
+			if err := json.Unmarshal(data, &original); err != nil {
+				t.Fatalf("unmarshal original: %v", err)
+			}
+			if err := json.Unmarshal(reMarshaled, &final); err != nil {
+				t.Fatalf("unmarshal round trip: %v", err)
+			}
+
+			if !jsonEqual(original, final) {
+				t.Errorf("payload mismatch after round trip: want %v, got %v", original, final)
 			}
 		})
 	}
@@ -487,7 +619,9 @@ func TestHelloOmitsEmptyActiveTasks(t *testing.T) {
 	}
 
 	var raw map[string]any
-	_ = json.Unmarshal(data, &raw)
+	if err := json.Unmarshal(data, &raw); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
 	if _, exists := raw["activeTasks"]; exists {
 		t.Error("activeTasks should be omitted when empty")
 	}
@@ -529,7 +663,9 @@ func TestWelcomeOmitsEmptyVersion(t *testing.T) {
 	}
 
 	var raw map[string]any
-	_ = json.Unmarshal(data, &raw)
+	if err := json.Unmarshal(data, &raw); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
 	if _, exists := raw["latestDaemonVersion"]; exists {
 		t.Error("latestDaemonVersion should be omitted when empty")
 	}
@@ -623,7 +759,9 @@ func TestTraceparentOmittedWhenEmpty(t *testing.T) {
 	}
 
 	var raw map[string]any
-	_ = json.Unmarshal(data, &raw)
+	if err := json.Unmarshal(data, &raw); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
 	if _, exists := raw["traceparent"]; exists {
 		t.Error("traceparent should be omitted when empty")
 	}
