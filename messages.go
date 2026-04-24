@@ -52,21 +52,30 @@ const (
 	MsgTypeWorkflowDesignChatComplete = "workflowDesignChatComplete"
 )
 
+// TaskOrigin identifies the producer and scheduler context for a task.
+type TaskOrigin struct {
+	Kind            string `json:"kind,omitempty"`
+	ScheduledTaskID string `json:"scheduledTaskId,omitempty"`
+	RunID           string `json:"runId,omitempty"`
+	ScheduledFor    string `json:"scheduledFor,omitempty"`
+}
+
 // Task is sent from the browser to the daemon to dispatch a user message.
 type Task struct {
-	Type            string   `json:"type"`
-	TaskID          string   `json:"taskId"`
-	SessionID       string   `json:"sessionId"`
-	ChannelID       string   `json:"channelId"`
-	Prompt          string   `json:"prompt"`
-	Model           string   `json:"model"`
-	Effort          string   `json:"effort"`
-	PermissionMode  string   `json:"permissionMode"`
-	CWD             string   `json:"cwd"`
-	ClaudeSessionID string   `json:"claudeSessionId,omitempty"` // passed to --resume
-	RequestID       string   `json:"requestId,omitempty"`
-	Traceparent     string   `json:"traceparent,omitempty"` // W3C trace context
-	ImageURLs       []string `json:"imageUrls,omitempty"`   // user-attached image URLs
+	Type            string      `json:"type"`
+	TaskID          string      `json:"taskId"`
+	SessionID       string      `json:"sessionId"`
+	ChannelID       string      `json:"channelId"`
+	Prompt          string      `json:"prompt"`
+	Model           string      `json:"model"`
+	Effort          string      `json:"effort"`
+	PermissionMode  string      `json:"permissionMode"`
+	CWD             string      `json:"cwd"`
+	ClaudeSessionID string      `json:"claudeSessionId,omitempty"` // passed to --resume
+	RequestID       string      `json:"requestId,omitempty"`
+	Traceparent     string      `json:"traceparent,omitempty"` // W3C trace context
+	ImageURLs       []string    `json:"imageUrls,omitempty"`   // user-attached image URLs
+	Origin          *TaskOrigin `json:"origin,omitempty"`
 }
 
 // Stop asks the daemon to interrupt the current Claude process for a session.
@@ -367,14 +376,21 @@ type ReadFileResult struct {
 	Error     string `json:"error,omitempty"`
 }
 
+// HelloCapabilities describes optional daemon protocol support.
+type HelloCapabilities struct {
+	TaskOrigin bool `json:"taskOrigin,omitempty"`
+	Stop       bool `json:"stop,omitempty"`
+}
+
 // Hello is the first frame sent by the daemon after connecting.
 type Hello struct {
-	Type          string   `json:"type"`
-	MachineID     string   `json:"machineId"`
-	DaemonVersion string   `json:"daemonVersion"`
-	OS            string   `json:"os"`
-	Arch          string   `json:"arch"`
-	ActiveTasks   []string `json:"activeTasks,omitempty"`
+	Type          string             `json:"type"`
+	MachineID     string             `json:"machineId"`
+	DaemonVersion string             `json:"daemonVersion"`
+	OS            string             `json:"os"`
+	Arch          string             `json:"arch"`
+	ActiveTasks   []string           `json:"activeTasks,omitempty"`
+	Capabilities  *HelloCapabilities `json:"capabilities,omitempty"`
 }
 
 // Welcome is the relay's response to Hello.

@@ -34,6 +34,17 @@ Dispatch a user message to a session.
 | claudeSessionId | string? | Pass to `claude -p --resume` to continue an existing Claude conversation. Empty for the first turn. |
 | requestId | uuid? | Optional root correlation ID for request-scoped logging. |
 | traceparent | string? | W3C trace context. |
+| imageUrls | string[]? | User-attached image URLs. |
+| origin | TaskOrigin? | Producer and scheduler context for logs, observability, and run correlation. |
+
+`TaskOrigin`:
+
+| Field | Type | Notes |
+|---|---|---|
+| kind | "interactive" \| "scheduled" | Omitted values are interpreted as interactive user dispatch. |
+| scheduledTaskId | uuid? | Scheduled task definition that produced the run. |
+| runId | uuid? | Scheduled task run record that produced the dispatch. |
+| scheduledFor | iso8601 string? | Nominal fire time selected by the scheduler. |
 
 ### `stop`
 Interrupt the current Claude process for a session.
@@ -255,6 +266,14 @@ Sent when the user interrupts a running task via `stop`.
 | os | string |
 | arch | string |
 | activeTasks | string[]? | Task IDs the daemon still considers in flight |
+| capabilities | HelloCapabilities? | Optional daemon feature support. |
+
+`HelloCapabilities`:
+
+| Field | Type | Notes |
+|---|---|---|
+| taskOrigin | boolean? | Daemon preserves task origin metadata in execution logs and task lifecycle handling. |
+| stop | boolean? | Daemon accepts stop messages for active task cancellation. |
 
 ### `welcome` (relay → daemon, response to hello)
 
