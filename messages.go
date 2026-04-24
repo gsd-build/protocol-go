@@ -43,9 +43,9 @@ const (
 	MsgTypeMachineStatus   = "machineStatus"
 	MsgTypeUpdateAvailable = "updateAvailable"
 
-	MsgTypeWorkflowRun             = "workflowRun"
-	MsgTypeWorkflowStop            = "workflowStop"
-	MsgTypeWorkflowDesignChat      = "workflowDesignChat"
+	MsgTypeWorkflowRun        = "workflowRun"
+	MsgTypeWorkflowStop       = "workflowStop"
+	MsgTypeWorkflowDesignChat = "workflowDesignChat"
 
 	MsgTypeWorkflowStarted            = "workflowStarted"
 	MsgTypeWorkflowNodeStarted        = "workflowNodeStarted"
@@ -60,20 +60,19 @@ const (
 
 // Task is sent from the browser to the daemon to dispatch a user message.
 type Task struct {
-	Type                string   `json:"type"`
-	TaskID              string   `json:"taskId"`
-	SessionID           string   `json:"sessionId"`
-	ChannelID           string   `json:"channelId"`
-	Prompt              string   `json:"prompt"`
-	Model               string   `json:"model"`
-	Effort              string   `json:"effort"`
-	PermissionMode      string   `json:"permissionMode"`
-	PersonaSystemPrompt string   `json:"personaSystemPrompt,omitempty"`
-	CWD                 string   `json:"cwd"`
-	ClaudeSessionID     string   `json:"claudeSessionId,omitempty"` // passed to --resume
-	RequestID           string   `json:"requestId,omitempty"`
-	Traceparent         string   `json:"traceparent,omitempty"` // W3C trace context
-	ImageURLs           []string `json:"imageUrls,omitempty"`   // user-attached image URLs
+	Type            string   `json:"type"`
+	TaskID          string   `json:"taskId"`
+	SessionID       string   `json:"sessionId"`
+	ChannelID       string   `json:"channelId"`
+	Prompt          string   `json:"prompt"`
+	Model           string   `json:"model"`
+	Effort          string   `json:"effort"`
+	PermissionMode  string   `json:"permissionMode"`
+	CWD             string   `json:"cwd"`
+	ClaudeSessionID string   `json:"claudeSessionId,omitempty"` // passed to --resume
+	RequestID       string   `json:"requestId,omitempty"`
+	Traceparent     string   `json:"traceparent,omitempty"` // W3C trace context
+	ImageURLs       []string `json:"imageUrls,omitempty"`   // user-attached image URLs
 }
 
 // Stop asks the daemon to interrupt the current Claude process for a session.
