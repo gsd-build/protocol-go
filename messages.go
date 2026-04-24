@@ -34,12 +34,6 @@ const (
 	MsgTypeCronInventory  = "cronInventory"
 	MsgTypeCronExecResult = "cronExecResult"
 
-	MsgTypeSkillInventory      = "skillInventory"
-	MsgTypeSkillContentRequest = "skillContentRequest"
-	MsgTypeSkillContentUpload  = "skillContentUpload"
-	MsgTypeSkillPush           = "skillPush"
-	MsgTypeSkillDelete         = "skillDelete"
-
 	MsgTypeMachineStatus   = "machineStatus"
 	MsgTypeUpdateAvailable = "updateAvailable"
 
@@ -441,71 +435,6 @@ type CronExecResult struct {
 	Error      string `json:"error,omitempty"`
 	DurationMs int64  `json:"durationMs,omitempty"`
 	Timestamp  string `json:"timestamp"`
-}
-
-// SkillInventory reports the normalized skill list for one machine.
-type SkillInventory struct {
-	Type      string                `json:"type"`
-	MachineID string                `json:"machineId"`
-	Entries   []SkillInventoryEntry `json:"entries"`
-}
-
-// SkillInventoryEntry describes one discovered skill in the machine inventory.
-type SkillInventoryEntry struct {
-	Slug               string `json:"slug"`
-	DisplayName        string `json:"displayName"`
-	Description        string `json:"description"`
-	Scope              string `json:"scope"`
-	Runtime            string `json:"runtime"`
-	Root               string `json:"root"`
-	ProjectRoot        string `json:"projectRoot,omitempty"`
-	RelativePath       string `json:"relativePath"`
-	SourceKind         string `json:"sourceKind"`
-	MachineFingerprint string `json:"machineFingerprint"`
-	Editable           bool   `json:"editable"`
-}
-
-// SkillContentRequest asks a daemon for the body of one managed skill file.
-type SkillContentRequest struct {
-	Type         string `json:"type"`
-	MachineID    string `json:"machineId"`
-	Slug         string `json:"slug"`
-	Root         string `json:"root"`
-	RelativePath string `json:"relativePath"`
-}
-
-// SkillContentUpload carries a machine-authored skill body to the relay.
-type SkillContentUpload struct {
-	Type               string `json:"type"`
-	MachineID          string `json:"machineId"`
-	Slug               string `json:"slug"`
-	Root               string `json:"root"`
-	RelativePath       string `json:"relativePath"`
-	Content            string `json:"content"`
-	MachineFingerprint string `json:"machineFingerprint"`
-	BaseCloudRevision  int64  `json:"baseCloudRevision"`
-}
-
-// SkillPush instructs a daemon to write a managed skill body from the cloud.
-type SkillPush struct {
-	Type             string `json:"type"`
-	MachineID        string `json:"machineId"`
-	Slug             string `json:"slug"`
-	Root             string `json:"root"`
-	RelativePath     string `json:"relativePath"`
-	Content          string `json:"content"`
-	CloudFingerprint string `json:"cloudFingerprint"`
-	CloudRevision    int64  `json:"cloudRevision"`
-}
-
-// SkillDelete instructs a daemon to remove a managed skill file or tree.
-type SkillDelete struct {
-	Type          string `json:"type"`
-	MachineID     string `json:"machineId"`
-	Slug          string `json:"slug"`
-	Root          string `json:"root"`
-	RelativePath  string `json:"relativePath"`
-	CloudRevision int64  `json:"cloudRevision"`
 }
 
 // MachineStatus is pushed to all connected browsers when machine presence changes.
