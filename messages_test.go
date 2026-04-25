@@ -24,6 +24,23 @@ func TestEnvelopeRoundTrip(t *testing.T) {
 			RequestID:       "33333333-3333-3333-3333-333333333333",
 			Traceparent:     "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
 		}},
+		{"scheduled task", &Task{
+			Type:           MsgTypeTask,
+			TaskID:         "11111111-1111-1111-1111-111111111111",
+			SessionID:      "22222222-2222-2222-2222-222222222222",
+			ChannelID:      "scheduled-44444444-4444-4444-4444-444444444444",
+			Prompt:         "Run release checks",
+			Model:          "claude-sonnet-4-6",
+			Effort:         "medium",
+			PermissionMode: "acceptEdits",
+			CWD:            "/tmp/project",
+			Origin: &TaskOrigin{
+				Kind:            "scheduled",
+				ScheduledTaskID: "33333333-3333-3333-3333-333333333333",
+				RunID:           "44444444-4444-4444-4444-444444444444",
+				ScheduledFor:    "2026-04-24T18:00:00Z",
+			},
+		}},
 		{"stream", &Stream{
 			Type:           MsgTypeStream,
 			SessionID:      "22222222-2222-2222-2222-222222222222",
@@ -39,6 +56,17 @@ func TestEnvelopeRoundTrip(t *testing.T) {
 			DaemonVersion: "0.1.0",
 			OS:            "darwin",
 			Arch:          "arm64",
+		}},
+		{"hello capabilities", &Hello{
+			Type:          MsgTypeHello,
+			MachineID:     "mach-id",
+			DaemonVersion: "0.2.0",
+			OS:            "darwin",
+			Arch:          "arm64",
+			Capabilities: &HelloCapabilities{
+				TaskOrigin: true,
+				Stop:       true,
+			},
 		}},
 		{"syncCrons", &SyncCrons{
 			Type:      MsgTypeSyncCrons,
