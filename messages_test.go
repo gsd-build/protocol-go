@@ -16,6 +16,7 @@ func TestEnvelopeRoundTrip(t *testing.T) {
 			SessionID:       "22222222-2222-2222-2222-222222222222",
 			ChannelID:       "ch-1",
 			Prompt:          "hello",
+			Engine:          "pi",
 			Model:           "claude-opus-4-6[1m]",
 			Effort:          "max",
 			PermissionMode:  "acceptEdits",
@@ -528,6 +529,35 @@ func TestRequestIDRoundTrip(t *testing.T) {
 	}
 	if got.Traceparent != tp {
 		t.Errorf("traceparent mismatch: want %s, got %s", tp, got.Traceparent)
+	}
+}
+
+func TestTaskEngineRoundTrip(t *testing.T) {
+	task := &Task{
+		Type:      MsgTypeTask,
+		TaskID:    "11111111-1111-1111-1111-111111111111",
+		SessionID: "22222222-2222-2222-2222-222222222222",
+		ChannelID: "ch-1",
+		Prompt:    "hello",
+		Engine:    "pi",
+	}
+
+	data, err := json.Marshal(task)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+
+	env, err := ParseEnvelope(data)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+
+	got, ok := env.Payload.(*Task)
+	if !ok {
+		t.Fatalf("expected *Task, got %T", env.Payload)
+	}
+	if got.Engine != "pi" {
+		t.Fatalf("engine mismatch: want pi, got %q", got.Engine)
 	}
 }
 
