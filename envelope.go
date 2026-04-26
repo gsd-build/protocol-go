@@ -88,12 +88,6 @@ func payloadForType(msgType string) (any, error) {
 		return &Hello{}, nil
 	case MsgTypeWelcome:
 		return &Welcome{}, nil
-	case MsgTypeSyncCrons:
-		return &SyncCrons{}, nil
-	case MsgTypeCronInventory:
-		return &CronInventory{}, nil
-	case MsgTypeCronExecResult:
-		return &CronExecResult{}, nil
 	case MsgTypeMachineStatus:
 		return &MachineStatus{}, nil
 	case MsgTypeUpdateAvailable:

@@ -38,16 +38,6 @@ Dispatch a user message to a session.
 | requestId | uuid? | Optional root correlation ID for request-scoped logging. |
 | traceparent | string? | W3C trace context. |
 | imageUrls | string[]? | User-attached image URLs. |
-| origin | TaskOrigin? | Producer and scheduler context for logs, observability, and run correlation. |
-
-`TaskOrigin`:
-
-| Field | Type | Notes |
-|---|---|---|
-| kind | "interactive" \| "scheduled" | Omitted values are interpreted as interactive user dispatch. |
-| scheduledTaskId | uuid? | Scheduled task definition that produced the run. |
-| runId | uuid? | Scheduled task run record that produced the dispatch. |
-| scheduledFor | iso8601 string? | Nominal fire time selected by the scheduler. |
 
 ### `stop`
 Interrupt the current Claude process for a session.
@@ -275,7 +265,6 @@ Sent when the user interrupts a running task via `stop`.
 
 | Field | Type | Notes |
 |---|---|---|
-| taskOrigin | boolean? | Daemon preserves task origin metadata in execution logs and task lifecycle handling. |
 | stop | boolean? | Daemon accepts stop messages for active task cancellation. |
 
 ### `welcome` (relay → daemon, response to hello)
@@ -284,71 +273,3 @@ Sent when the user interrupts a running task via `stop`.
 |---|---|
 | type | "welcome" |
 | latestDaemonVersion | string? | Optional latest daemon version for update prompts |
-
-### `syncCrons` (relay → daemon)
-
-Sent after daemon connect and after cron config mutations so the daemon can
-reconcile its local cron config directory to the server-owned config set.
-
-| Field | Type |
-|---|---|
-| type | "syncCrons" |
-| machineId | uuid |
-| jobs | CronSpec[] |
-| sentAt | iso8601 string |
-
-`CronSpec`:
-
-| Field | Type |
-|---|---|
-| id | uuid |
-| name | string |
-| cronExpression | string |
-| prompt | string |
-| mode | string |
-| model | string |
-| effort | string |
-| projectId | uuid |
-| targetSessionId | uuid? |
-| enabled | boolean |
-
-### `cronInventory` (daemon → relay)
-
-Sent after daemon reconciliation and on future local inventory changes so the
-relay/browser can show the daemon's current cron state.
-
-| Field | Type |
-|---|---|
-| type | "cronInventory" |
-| machineId | uuid |
-| items | CronLocalState[] |
-| timestamp | iso8601 string |
-
-`CronLocalState`:
-
-| Field | Type |
-|---|---|
-| id | uuid |
-| name | string |
-| cronExpression | string |
-| enabled | boolean |
-| syncedAt | iso8601 string |
-| lastRunAt | iso8601 string? |
-| nextRunAt | iso8601 string? |
-| locallyModified | boolean |
-
-### `cronExecResult` (daemon → relay)
-
-Sent after a daemon-managed cron execution finishes so the relay can persist the
-result and fan it out to browser subscribers.
-
-| Field | Type |
-|---|---|
-| type | "cronExecResult" |
-| machineId | uuid |
-| cronJobId | uuid |
-| taskId | uuid |
-| status | string |
-| error | string? |
-| durationMs | int64? |
-| timestamp | iso8601 string |
