@@ -20,6 +20,8 @@ Every message is a JSON object with a `type` field:
 ### `task`
 Dispatch a user message to a session.
 
+`engine` selects the daemon task executor. Daemons that do not support this field ignore it through normal JSON decoding.
+
 | Field | Type | Notes |
 |---|---|---|
 | type | "task" | |
@@ -27,6 +29,7 @@ Dispatch a user message to a session.
 | sessionId | uuid | |
 | channelId | string | Routes stream events back to the correct browser tab |
 | prompt | string | |
+| engine | "claude" \| "pi"? | Optional task execution engine. Empty means `"claude"`. |
 | model | string | e.g. `claude-opus-4-6[1m]` |
 | effort | "low" \| "medium" \| "high" \| "max" | |
 | permissionMode | string | e.g. `acceptEdits` |
