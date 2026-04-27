@@ -68,6 +68,37 @@ Interrupt the current Claude process for a session.
 | requestId | uuid |
 | answer | string |
 
+### Context Compaction
+
+#### `compactRequest`
+
+Browser-to-daemon control message. The daemon executes Pi RPC `compact` against the session's Pi session file.
+
+```json
+{
+  "type": "compactRequest",
+  "sessionId": "session_123",
+  "channelId": "channel_123",
+  "requestId": "compact_123",
+  "instructions": "preserve auth state and exact file paths"
+}
+```
+
+`instructions` is optional. Empty instructions produce Pi's default compaction behavior.
+
+#### `contextStatsRequest`
+
+Browser-to-daemon control message. The daemon executes Pi RPC `get_session_stats` against the session's Pi session file.
+
+```json
+{
+  "type": "contextStatsRequest",
+  "sessionId": "session_123",
+  "channelId": "channel_123",
+  "requestId": "stats_123"
+}
+```
+
 ### `browseDir`
 
 | Field | Type |
@@ -198,6 +229,58 @@ Sent when the user interrupts a running task via `stop`.
 | header | string? |
 | multiSelect | boolean? |
 | options | { label: string, description?: string, preview?: string }[]? |
+
+### `contextStats`
+
+Daemon-to-browser status message. Values come from Pi.
+
+```json
+{
+  "type": "contextStats",
+  "sessionId": "session_123",
+  "channelId": "channel_123",
+  "requestId": "stats_123",
+  "tokens": 270000,
+  "contextWindow": 1000000,
+  "percent": 27,
+  "reserveTokens": 16384,
+  "keepRecentTokens": 20000,
+  "autoThresholdPercent": 98.3616,
+  "source": "pi",
+  "observedAt": "2026-04-27T12:00:00Z"
+}
+```
+
+`tokens` and `percent` may be `null` immediately after compaction.
+
+### `compactStatus`
+
+Daemon-to-browser lifecycle message for manual and automatic compaction.
+
+```json
+{
+  "type": "compactStatus",
+  "sessionId": "session_123",
+  "channelId": "channel_123",
+  "requestId": "compact_123",
+  "status": "completed",
+  "reason": "manual",
+  "instructions": "preserve auth state and exact file paths",
+  "tokensBefore": 8951,
+  "tokensAfter": 7712,
+  "contextWindow": 1000000,
+  "reserveTokens": 16384,
+  "keepRecentTokens": 20000,
+  "autoThresholdPercent": 98.3616,
+  "summary": "The session is working on Pi context compaction.",
+  "firstKeptEntryId": "entry_42",
+  "source": "pi",
+  "observedAt": "2026-04-27T12:01:00Z"
+}
+```
+
+`status` is one of `started`, `completed`, or `failed`.
+`reason` is one of `manual`, `threshold`, or `overflow`.
 
 ### `heartbeat`
 
