@@ -349,6 +349,10 @@ Daemon-to-browser lifecycle message for manual and automatic compaction.
 | Field | Type | Notes |
 |---|---|---|
 | stop | boolean? | Daemon accepts stop messages for active task cancellation. |
+| previewTunnel | boolean? | Daemon accepts remote localhost preview messages. |
+| previewMaxFrameBytes | int? | Maximum encoded preview frame size. |
+| previewChunkBytes | int? | Raw preview body chunk target. |
+| previewWebSocketProtocols | boolean? | Daemon forwards requested WebSocket subprotocols. |
 
 ### `welcome` (relay → daemon, response to hello)
 
@@ -356,3 +360,29 @@ Daemon-to-browser lifecycle message for manual and automatic compaction.
 |---|---|
 | type | "welcome" |
 | latestDaemonVersion | string? | Optional latest daemon version for update prompts |
+
+## Remote Localhost Preview
+
+Daemons advertise preview support in `hello.capabilities`.
+
+Preview traffic is owner-approved, loopback-only, and routed as explicit protocol messages. Preview bytes are transient transport data and are not chat messages.
+
+### Capability
+
+`previewTunnel`, `previewMaxFrameBytes`, `previewChunkBytes`, and `previewWebSocketProtocols` describe daemon support.
+
+### Lifecycle
+
+`previewOpen` registers one loopback target for a preview. `previewClose` revokes it. `previewOpenResult.ok=false` includes `errorCode` and `message`.
+
+### HTTP
+
+`previewHttpRequest` carries method, origin-form path, and request headers. Request and response bodies use `previewStreamChunk` frames keyed by `streamId`.
+
+### WebSocket
+
+`previewWebSocketOpen` opens a target WebSocket with requested subprotocols. `previewWebSocketData` carries ordered text or binary payload bytes. `previewWebSocketClose` closes both sides.
+
+### Stream Cancellation
+
+`previewStreamCancel` cancels local IO for the stream. Receivers treat duplicate, missing, or out-of-order chunks as stream errors.

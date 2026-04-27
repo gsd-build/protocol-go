@@ -39,7 +39,18 @@ const (
 	MsgTypeHello   = "hello"
 	MsgTypeWelcome = "welcome"
 
-	MsgTypeMachineStatus = "machineStatus"
+	MsgTypeMachineStatus              = "machineStatus"
+	MsgTypePreviewOpen                = "previewOpen"
+	MsgTypePreviewOpenResult          = "previewOpenResult"
+	MsgTypePreviewClose               = "previewClose"
+	MsgTypePreviewHTTPRequest         = "previewHttpRequest"
+	MsgTypePreviewHTTPResponseHead    = "previewHttpResponseHead"
+	MsgTypePreviewStreamChunk         = "previewStreamChunk"
+	MsgTypePreviewStreamCancel        = "previewStreamCancel"
+	MsgTypePreviewWebSocketOpen       = "previewWebSocketOpen"
+	MsgTypePreviewWebSocketOpenResult = "previewWebSocketOpenResult"
+	MsgTypePreviewWebSocketData       = "previewWebSocketData"
+	MsgTypePreviewWebSocketClose      = "previewWebSocketClose"
 )
 
 // Task is sent from the browser to the daemon to dispatch a user message.
@@ -317,7 +328,11 @@ type ReadFileResult struct {
 
 // HelloCapabilities describes optional daemon protocol support.
 type HelloCapabilities struct {
-	Stop bool `json:"stop,omitempty"`
+	Stop                      bool `json:"stop,omitempty"`
+	PreviewTunnel             bool `json:"previewTunnel,omitempty"`
+	PreviewMaxFrameBytes      int  `json:"previewMaxFrameBytes,omitempty"`
+	PreviewChunkBytes         int  `json:"previewChunkBytes,omitempty"`
+	PreviewWebSocketProtocols bool `json:"previewWebSocketProtocols,omitempty"`
 }
 
 // Hello is the first frame sent by the daemon after connecting.
@@ -345,4 +360,98 @@ type MachineStatus struct {
 	PreviousState string `json:"previousState,omitempty"`
 	Reason        string `json:"reason,omitempty"`
 	OccurredAt    string `json:"occurredAt"`
+}
+
+type PreviewOpen struct {
+	Type       string `json:"type"`
+	RequestID  string `json:"requestId"`
+	PreviewID  string `json:"previewId"`
+	SessionID  string `json:"sessionId"`
+	ChannelID  string `json:"channelId"`
+	MachineID  string `json:"machineId"`
+	TargetHost string `json:"targetHost"`
+	TargetPort int    `json:"targetPort"`
+	ExpiresAt  string `json:"expiresAt"`
+}
+
+type PreviewOpenResult struct {
+	Type      string `json:"type"`
+	RequestID string `json:"requestId"`
+	PreviewID string `json:"previewId"`
+	OK        bool   `json:"ok"`
+	ErrorCode string `json:"errorCode,omitempty"`
+	Message   string `json:"message,omitempty"`
+}
+
+type PreviewClose struct {
+	Type      string `json:"type"`
+	PreviewID string `json:"previewId"`
+	Reason    string `json:"reason"`
+}
+
+type PreviewHTTPRequest struct {
+	Type      string              `json:"type"`
+	RequestID string              `json:"requestId"`
+	StreamID  string              `json:"streamId"`
+	PreviewID string              `json:"previewId"`
+	Method    string              `json:"method"`
+	Path      string              `json:"path"`
+	Headers   map[string][]string `json:"headers,omitempty"`
+}
+
+type PreviewHTTPResponseHead struct {
+	Type       string              `json:"type"`
+	RequestID  string              `json:"requestId"`
+	StreamID   string              `json:"streamId"`
+	PreviewID  string              `json:"previewId"`
+	StatusCode int                 `json:"statusCode"`
+	Headers    map[string][]string `json:"headers,omitempty"`
+}
+
+type PreviewStreamChunk struct {
+	Type       string `json:"type"`
+	StreamID   string `json:"streamId"`
+	Sequence   int64  `json:"sequence"`
+	BodyBase64 string `json:"bodyBase64"`
+	Final      bool   `json:"final"`
+}
+
+type PreviewStreamCancel struct {
+	Type     string `json:"type"`
+	StreamID string `json:"streamId"`
+	Reason   string `json:"reason"`
+}
+
+type PreviewWebSocketOpen struct {
+	Type      string              `json:"type"`
+	StreamID  string              `json:"streamId"`
+	PreviewID string              `json:"previewId"`
+	Path      string              `json:"path"`
+	Headers   map[string][]string `json:"headers,omitempty"`
+	Protocols []string            `json:"protocols,omitempty"`
+}
+
+type PreviewWebSocketOpenResult struct {
+	Type      string `json:"type"`
+	StreamID  string `json:"streamId"`
+	PreviewID string `json:"previewId"`
+	OK        bool   `json:"ok"`
+	Protocol  string `json:"protocol,omitempty"`
+	ErrorCode string `json:"errorCode,omitempty"`
+	Message   string `json:"message,omitempty"`
+}
+
+type PreviewWebSocketData struct {
+	Type       string `json:"type"`
+	StreamID   string `json:"streamId"`
+	Sequence   int64  `json:"sequence"`
+	IsBinary   bool   `json:"isBinary"`
+	BodyBase64 string `json:"bodyBase64"`
+}
+
+type PreviewWebSocketClose struct {
+	Type     string `json:"type"`
+	StreamID string `json:"streamId"`
+	Code     int    `json:"code,omitempty"`
+	Reason   string `json:"reason,omitempty"`
 }
