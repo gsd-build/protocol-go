@@ -3,29 +3,38 @@
 // specification; every change here must be mirrored in that file.
 package protocol
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"time"
+)
+
+type MessageType = string
 
 // Message type constants.
 const (
-	MsgTypeTask               = "task"
-	MsgTypeStop               = "stop"
-	MsgTypePermissionResponse = "permissionResponse"
-	MsgTypeQuestionResponse   = "questionResponse"
-	MsgTypeBrowseDir          = "browseDir"
-	MsgTypeReadFile           = "readFile"
-	MsgTypeMkDir              = "mkDir"
-	MsgTypeMkDirResult        = "mkDirResult"
+	MsgTypeTask                            = "task"
+	MsgTypeStop                            = "stop"
+	MsgTypePermissionResponse              = "permissionResponse"
+	MsgTypeQuestionResponse                = "questionResponse"
+	MsgTypeBrowseDir                       = "browseDir"
+	MsgTypeReadFile                        = "readFile"
+	MsgTypeMkDir                           = "mkDir"
+	MsgTypeMkDirResult                     = "mkDirResult"
+	MsgTypeCompactRequest      MessageType = "compactRequest"
+	MsgTypeContextStatsRequest MessageType = "contextStatsRequest"
 
-	MsgTypeStream            = "stream"
-	MsgTypeTaskStarted       = "taskStarted"
-	MsgTypeTaskComplete      = "taskComplete"
-	MsgTypeTaskError         = "taskError"
-	MsgTypeTaskCancelled     = "taskCancelled"
-	MsgTypePermissionRequest = "permissionRequest"
-	MsgTypeQuestion          = "question"
-	MsgTypeHeartbeat         = "heartbeat"
-	MsgTypeBrowseDirResult   = "browseDirResult"
-	MsgTypeReadFileResult    = "readFileResult"
+	MsgTypeStream                        = "stream"
+	MsgTypeTaskStarted                   = "taskStarted"
+	MsgTypeTaskComplete                  = "taskComplete"
+	MsgTypeTaskError                     = "taskError"
+	MsgTypeTaskCancelled                 = "taskCancelled"
+	MsgTypePermissionRequest             = "permissionRequest"
+	MsgTypeQuestion                      = "question"
+	MsgTypeHeartbeat                     = "heartbeat"
+	MsgTypeBrowseDirResult               = "browseDirResult"
+	MsgTypeReadFileResult                = "readFileResult"
+	MsgTypeContextStats      MessageType = "contextStats"
+	MsgTypeCompactStatus     MessageType = "compactStatus"
 
 	MsgTypeHello   = "hello"
 	MsgTypeWelcome = "welcome"
@@ -93,6 +102,37 @@ type ReadFile struct {
 	MachineID string `json:"machineId"`
 	Path      string `json:"path"`
 	MaxBytes  int    `json:"maxBytes,omitempty"`
+}
+
+type CompactReason string
+
+const (
+	CompactReasonManual    CompactReason = "manual"
+	CompactReasonThreshold CompactReason = "threshold"
+	CompactReasonOverflow  CompactReason = "overflow"
+)
+
+type CompactLifecycleStatus string
+
+const (
+	CompactStatusStarted   CompactLifecycleStatus = "started"
+	CompactStatusCompleted CompactLifecycleStatus = "completed"
+	CompactStatusFailed    CompactLifecycleStatus = "failed"
+)
+
+type CompactRequest struct {
+	Type         MessageType `json:"type"`
+	SessionID    string      `json:"sessionId"`
+	ChannelID    string      `json:"channelId"`
+	RequestID    string      `json:"requestId"`
+	Instructions string      `json:"instructions,omitempty"`
+}
+
+type ContextStatsRequest struct {
+	Type      MessageType `json:"type"`
+	SessionID string      `json:"sessionId"`
+	ChannelID string      `json:"channelId"`
+	RequestID string      `json:"requestId"`
 }
 
 // Stream carries a single Claude event plus a sequence number.
@@ -180,6 +220,42 @@ type Question struct {
 	Header      string           `json:"header,omitempty"`
 	MultiSelect bool             `json:"multiSelect,omitempty"`
 	Options     []QuestionOption `json:"options,omitempty"`
+}
+
+type ContextStats struct {
+	Type                 MessageType `json:"type"`
+	SessionID            string      `json:"sessionId"`
+	ChannelID            string      `json:"channelId"`
+	RequestID            string      `json:"requestId,omitempty"`
+	Tokens               *int64      `json:"tokens"`
+	ContextWindow        int64       `json:"contextWindow"`
+	Percent              *float64    `json:"percent"`
+	ReserveTokens        int64       `json:"reserveTokens"`
+	KeepRecentTokens     int64       `json:"keepRecentTokens"`
+	AutoThresholdPercent float64     `json:"autoThresholdPercent"`
+	Source               string      `json:"source"`
+	ObservedAt           time.Time   `json:"observedAt"`
+}
+
+type CompactStatus struct {
+	Type                 MessageType            `json:"type"`
+	SessionID            string                 `json:"sessionId"`
+	ChannelID            string                 `json:"channelId"`
+	RequestID            string                 `json:"requestId"`
+	Status               CompactLifecycleStatus `json:"status"`
+	Reason               CompactReason          `json:"reason"`
+	Instructions         string                 `json:"instructions,omitempty"`
+	TokensBefore         *int64                 `json:"tokensBefore"`
+	TokensAfter          *int64                 `json:"tokensAfter"`
+	ContextWindow        int64                  `json:"contextWindow"`
+	ReserveTokens        int64                  `json:"reserveTokens"`
+	KeepRecentTokens     int64                  `json:"keepRecentTokens"`
+	AutoThresholdPercent float64                `json:"autoThresholdPercent"`
+	Summary              string                 `json:"summary,omitempty"`
+	FirstKeptEntryID     string                 `json:"firstKeptEntryId,omitempty"`
+	Error                string                 `json:"error,omitempty"`
+	Source               string                 `json:"source"`
+	ObservedAt           time.Time              `json:"observedAt"`
 }
 
 // Heartbeat is the daemon's 30s health pulse.

@@ -64,6 +64,10 @@ func payloadForType(msgType string) (any, error) {
 		return &MkDir{}, nil
 	case MsgTypeMkDirResult:
 		return &MkDirResult{}, nil
+	case MsgTypeCompactRequest:
+		return &CompactRequest{}, nil
+	case MsgTypeContextStatsRequest:
+		return &ContextStatsRequest{}, nil
 	case MsgTypeStream:
 		return &Stream{}, nil
 	case MsgTypeTaskStarted:
@@ -84,6 +88,10 @@ func payloadForType(msgType string) (any, error) {
 		return &BrowseDirResult{}, nil
 	case MsgTypeReadFileResult:
 		return &ReadFileResult{}, nil
+	case MsgTypeContextStats:
+		return &ContextStats{}, nil
+	case MsgTypeCompactStatus:
+		return &CompactStatus{}, nil
 	case MsgTypeHello:
 		return &Hello{}, nil
 	case MsgTypeWelcome:

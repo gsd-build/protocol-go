@@ -3,7 +3,11 @@ package protocol
 import (
 	"encoding/json"
 	"testing"
+	"time"
 )
+
+func floatPtr(v float64) *float64 { return &v }
+func int64Ptr(v int64) *int64     { return &v }
 
 func TestEnvelopeRoundTrip(t *testing.T) {
 	cases := []struct {
@@ -121,6 +125,52 @@ func TestEnvelopeRoundTrip(t *testing.T) {
 			ChannelID: "ch-1",
 			RequestID: "33333333-3333-3333-3333-333333333333",
 			Answer:    `["date-fns","custom note"]`,
+		}},
+		{"compact request", &CompactRequest{
+			Type:         MsgTypeCompactRequest,
+			SessionID:    "session_123",
+			ChannelID:    "channel_123",
+			RequestID:    "compact_123",
+			Instructions: "preserve auth state and exact file paths",
+		}},
+		{"context stats request", &ContextStatsRequest{
+			Type:      MsgTypeContextStatsRequest,
+			SessionID: "session_123",
+			ChannelID: "channel_123",
+			RequestID: "stats_123",
+		}},
+		{"context stats", &ContextStats{
+			Type:                 MsgTypeContextStats,
+			SessionID:            "session_123",
+			ChannelID:            "channel_123",
+			RequestID:            "stats_123",
+			Tokens:               int64Ptr(270000),
+			ContextWindow:        1000000,
+			Percent:              floatPtr(27.0),
+			ReserveTokens:        16384,
+			KeepRecentTokens:     20000,
+			AutoThresholdPercent: 98.3616,
+			Source:               "pi",
+			ObservedAt:           time.Date(2026, 4, 27, 12, 0, 0, 0, time.UTC),
+		}},
+		{"compact status completed", &CompactStatus{
+			Type:                 MsgTypeCompactStatus,
+			SessionID:            "session_123",
+			ChannelID:            "channel_123",
+			RequestID:            "compact_123",
+			Status:               CompactStatusCompleted,
+			Reason:               CompactReasonManual,
+			Instructions:         "preserve auth state and exact file paths",
+			TokensBefore:         int64Ptr(8951),
+			TokensAfter:          int64Ptr(7712),
+			ContextWindow:        1000000,
+			ReserveTokens:        16384,
+			KeepRecentTokens:     20000,
+			AutoThresholdPercent: 98.3616,
+			Summary:              "The session is working on Pi context compaction.",
+			FirstKeptEntryID:     "entry_42",
+			Source:               "pi",
+			ObservedAt:           time.Date(2026, 4, 27, 12, 1, 0, 0, time.UTC),
 		}},
 	}
 
