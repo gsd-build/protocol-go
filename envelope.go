@@ -98,6 +98,28 @@ func payloadForType(msgType string) (any, error) {
 		return &Welcome{}, nil
 	case MsgTypeMachineStatus:
 		return &MachineStatus{}, nil
+	case MsgTypePreviewOpen:
+		return &PreviewOpen{}, nil
+	case MsgTypePreviewOpenResult:
+		return &PreviewOpenResult{}, nil
+	case MsgTypePreviewClose:
+		return &PreviewClose{}, nil
+	case MsgTypePreviewHTTPRequest:
+		return &PreviewHTTPRequest{}, nil
+	case MsgTypePreviewHTTPResponseHead:
+		return &PreviewHTTPResponseHead{}, nil
+	case MsgTypePreviewStreamChunk:
+		return &PreviewStreamChunk{}, nil
+	case MsgTypePreviewStreamCancel:
+		return &PreviewStreamCancel{}, nil
+	case MsgTypePreviewWebSocketOpen:
+		return &PreviewWebSocketOpen{}, nil
+	case MsgTypePreviewWebSocketOpenResult:
+		return &PreviewWebSocketOpenResult{}, nil
+	case MsgTypePreviewWebSocketData:
+		return &PreviewWebSocketData{}, nil
+	case MsgTypePreviewWebSocketClose:
+		return &PreviewWebSocketClose{}, nil
 	default:
 		return nil, fmt.Errorf("unknown message type: %q", msgType)
 	}

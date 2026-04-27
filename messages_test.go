@@ -172,6 +172,85 @@ func TestEnvelopeRoundTrip(t *testing.T) {
 			Source:               "pi",
 			ObservedAt:           time.Date(2026, 4, 27, 12, 1, 0, 0, time.UTC),
 		}},
+		{"previewOpen", &PreviewOpen{
+			Type:       MsgTypePreviewOpen,
+			RequestID:  "req-1",
+			PreviewID:  "preview_123",
+			SessionID:  "session_123",
+			ChannelID:  "channel_123",
+			MachineID:  "machine_123",
+			TargetHost: "127.0.0.1",
+			TargetPort: 3000,
+			ExpiresAt:  "2026-04-27T20:00:00Z",
+		}},
+		{"previewOpenResult", &PreviewOpenResult{
+			Type:      MsgTypePreviewOpenResult,
+			RequestID: "req-1",
+			PreviewID: "preview_123",
+			OK:        true,
+		}},
+		{"previewHttpRequest", &PreviewHTTPRequest{
+			Type:      MsgTypePreviewHTTPRequest,
+			RequestID: "req-2",
+			StreamID:  "stream_1",
+			PreviewID: "preview_123",
+			Method:    "POST",
+			Path:      "/api/action",
+			Headers: map[string][]string{
+				"host":              {"preview_123.preview.gsd.build"},
+				"x-forwarded-proto": {"https"},
+			},
+		}},
+		{"previewHttpResponseHead", &PreviewHTTPResponseHead{
+			Type:       MsgTypePreviewHTTPResponseHead,
+			RequestID:  "req-2",
+			StreamID:   "stream_1",
+			PreviewID:  "preview_123",
+			StatusCode: 200,
+			Headers: map[string][]string{
+				"content-type": {"text/html; charset=utf-8"},
+			},
+		}},
+		{"previewStreamChunk", &PreviewStreamChunk{
+			Type:       MsgTypePreviewStreamChunk,
+			StreamID:   "stream_1",
+			Sequence:   1,
+			BodyBase64: "aGVsbG8=",
+			Final:      false,
+		}},
+		{"previewStreamCancel", &PreviewStreamCancel{
+			Type:     MsgTypePreviewStreamCancel,
+			StreamID: "stream_1",
+			Reason:   "browser_abort",
+		}},
+		{"previewWebSocketOpen", &PreviewWebSocketOpen{
+			Type:      MsgTypePreviewWebSocketOpen,
+			StreamID:  "ws_1",
+			PreviewID: "preview_123",
+			Path:      "/_next/webpack-hmr",
+			Headers:   map[string][]string{},
+			Protocols: []string{"vite-hmr"},
+		}},
+		{"previewWebSocketOpenResult", &PreviewWebSocketOpenResult{
+			Type:      MsgTypePreviewWebSocketOpenResult,
+			StreamID:  "ws_1",
+			PreviewID: "preview_123",
+			OK:        true,
+			Protocol:  "vite-hmr",
+		}},
+		{"previewWebSocketData", &PreviewWebSocketData{
+			Type:       MsgTypePreviewWebSocketData,
+			StreamID:   "ws_1",
+			Sequence:   1,
+			IsBinary:   false,
+			BodyBase64: "eyJ0eXBlIjoicGluZyJ9",
+		}},
+		{"previewWebSocketClose", &PreviewWebSocketClose{
+			Type:     MsgTypePreviewWebSocketClose,
+			StreamID: "ws_1",
+			Code:     1000,
+			Reason:   "normal",
+		}},
 	}
 
 	for _, tc := range cases {
@@ -212,6 +291,35 @@ func jsonEqual(a, b any) bool {
 	ja, _ := json.Marshal(a)
 	jb, _ := json.Marshal(b)
 	return string(ja) == string(jb)
+}
+
+func TestHelloPreviewCapabilitiesRoundTrip(t *testing.T) {
+	msg := &Hello{
+		Type:          MsgTypeHello,
+		MachineID:     "machine_123",
+		DaemonVersion: "0.5.0",
+		OS:            "darwin",
+		Arch:          "arm64",
+		Capabilities: &HelloCapabilities{
+			Stop:                      true,
+			PreviewTunnel:             true,
+			PreviewMaxFrameBytes:      1048576,
+			PreviewChunkBytes:         196608,
+			PreviewWebSocketProtocols: true,
+		},
+	}
+	data, err := json.Marshal(msg)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	env, err := ParseEnvelope(data)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	got := env.Payload.(*Hello)
+	if got.Capabilities == nil || !got.Capabilities.PreviewTunnel {
+		t.Fatalf("preview capability missing after round trip: %#v", got.Capabilities)
+	}
 }
 
 func TestParseEnvelopeRejectsUnknownType(t *testing.T) {
