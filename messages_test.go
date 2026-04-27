@@ -8,6 +8,7 @@ import (
 
 func floatPtr(v float64) *float64 { return &v }
 func int64Ptr(v int64) *int64     { return &v }
+func intPtr(v int) *int           { return &v }
 
 func TestEnvelopeRoundTrip(t *testing.T) {
 	cases := []struct {
@@ -52,7 +53,8 @@ func TestEnvelopeRoundTrip(t *testing.T) {
 			OS:            "darwin",
 			Arch:          "arm64",
 			Capabilities: &HelloCapabilities{
-				Stop: true,
+				Stop:     true,
+				Terminal: true,
 			},
 			ActiveTasks: []string{"task-a", "task-b"},
 		}},
@@ -125,6 +127,76 @@ func TestEnvelopeRoundTrip(t *testing.T) {
 			ChannelID: "ch-1",
 			RequestID: "33333333-3333-3333-3333-333333333333",
 			Answer:    `["date-fns","custom note"]`,
+		}},
+		{"terminalOpen", &TerminalOpen{
+			Type:      MsgTypeTerminalOpen,
+			RequestID: "open-1",
+			SessionID: "sess-1",
+			ChannelID: "chan-1",
+			Token:     "tok",
+			Cols:      120,
+			Rows:      32,
+		}},
+		{"terminalInput", &TerminalInput{
+			Type:       MsgTypeTerminalInput,
+			TerminalID: "term-1",
+			ChannelID:  "chan-1",
+			DataBase64: "YQ==",
+		}},
+		{"terminalOutput", &TerminalOutput{
+			Type:       MsgTypeTerminalOutput,
+			TerminalID: "term-1",
+			SessionID:  "sess-1",
+			ChannelID:  "chan-1",
+			Seq:        7,
+			DataBase64: "b2s=",
+		}},
+		{"terminalResize", &TerminalResize{
+			Type:       MsgTypeTerminalResize,
+			TerminalID: "term-1",
+			ChannelID:  "chan-1",
+			Cols:       100,
+			Rows:       28,
+		}},
+		{"terminalClose", &TerminalClose{
+			Type:       MsgTypeTerminalClose,
+			TerminalID: "term-1",
+			ChannelID:  "chan-1",
+		}},
+		{"terminalOpened", &TerminalOpened{
+			Type:       MsgTypeTerminalOpened,
+			RequestID:  "open-1",
+			TerminalID: "term-1",
+			SessionID:  "sess-1",
+			ChannelID:  "chan-1",
+			Shell:      "/bin/zsh",
+			CWD:        "/tmp/project",
+			StartedAt:  "2026-04-27T18:00:00Z",
+		}},
+		{"terminalSnapshot", &TerminalSnapshot{
+			Type:       MsgTypeTerminalSnapshot,
+			TerminalID: "term-1",
+			SessionID:  "sess-1",
+			ChannelID:  "chan-1",
+			Seq:        8,
+			DataBase64: "c25hcA==",
+		}},
+		{"terminalExit", &TerminalExit{
+			Type:       MsgTypeTerminalExit,
+			TerminalID: "term-1",
+			SessionID:  "sess-1",
+			ChannelID:  "chan-1",
+			ExitCode:   intPtr(0),
+			Reason:     "process_exit",
+			EndedAt:    "2026-04-27T18:30:00Z",
+		}},
+		{"terminalError", &TerminalError{
+			Type:       MsgTypeTerminalError,
+			RequestID:  "open-1",
+			TerminalID: "term-1",
+			SessionID:  "sess-1",
+			ChannelID:  "chan-1",
+			Error:      "Unable to start shell",
 		}},
 		{"compact request", &CompactRequest{
 			Type:         MsgTypeCompactRequest,
@@ -287,6 +359,110 @@ func TestEnvelopeRoundTrip(t *testing.T) {
 	}
 }
 
+func TestTerminalEnvelopeRejectsInvalidFieldTypes(t *testing.T) {
+	cases := []struct {
+		name string
+		raw  string
+	}{
+		{
+			name: "terminalOpen cols string",
+			raw:  `{"type":"terminalOpen","requestId":"open-1","sessionId":"sess-1","channelId":"chan-1","cols":"120","rows":32}`,
+		},
+		{
+			name: "terminalInput dataBase64 number",
+			raw:  `{"type":"terminalInput","terminalId":"term-1","channelId":"chan-1","dataBase64":123}`,
+		},
+		{
+			name: "terminalOutput seq string",
+			raw:  `{"type":"terminalOutput","terminalId":"term-1","sessionId":"sess-1","channelId":"chan-1","seq":"7","dataBase64":"b2s="}`,
+		},
+		{
+			name: "terminalResize rows string",
+			raw:  `{"type":"terminalResize","terminalId":"term-1","channelId":"chan-1","cols":100,"rows":"28"}`,
+		},
+		{
+			name: "terminalOpened startedAt object",
+			raw:  `{"type":"terminalOpened","requestId":"open-1","terminalId":"term-1","sessionId":"sess-1","channelId":"chan-1","shell":"/bin/zsh","cwd":"/tmp/project","startedAt":{}}`,
+		},
+		{
+			name: "terminalSnapshot seq object",
+			raw:  `{"type":"terminalSnapshot","terminalId":"term-1","sessionId":"sess-1","channelId":"chan-1","seq":{},"dataBase64":"c25hcA=="}`,
+		},
+		{
+			name: "terminalExit exitCode string",
+			raw:  `{"type":"terminalExit","terminalId":"term-1","sessionId":"sess-1","channelId":"chan-1","exitCode":"0","reason":"process_exit","endedAt":"2026-04-27T18:30:00Z"}`,
+		},
+		{
+			name: "terminalError error array",
+			raw:  `{"type":"terminalError","requestId":"open-1","terminalId":"term-1","sessionId":"sess-1","channelId":"chan-1","error":[]}`,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if _, err := ParseEnvelope([]byte(tc.raw)); err == nil {
+				t.Fatal("expected parse error")
+			}
+		})
+	}
+}
+
+func TestTerminalEnvelopeIgnoresUnknownFields(t *testing.T) {
+	cases := []struct {
+		name string
+		raw  string
+	}{
+		{
+			name: "terminalOpen",
+			raw:  `{"type":"terminalOpen","requestId":"open-1","sessionId":"sess-1","channelId":"chan-1","token":"tok","cols":120,"rows":32,"unknown":"ok"}`,
+		},
+		{
+			name: "terminalInput",
+			raw:  `{"type":"terminalInput","terminalId":"term-1","channelId":"chan-1","dataBase64":"YQ==","unknown":"ok"}`,
+		},
+		{
+			name: "terminalOutput",
+			raw:  `{"type":"terminalOutput","terminalId":"term-1","sessionId":"sess-1","channelId":"chan-1","seq":7,"dataBase64":"b2s=","unknown":"ok"}`,
+		},
+		{
+			name: "terminalResize",
+			raw:  `{"type":"terminalResize","terminalId":"term-1","channelId":"chan-1","cols":100,"rows":28,"unknown":"ok"}`,
+		},
+		{
+			name: "terminalClose",
+			raw:  `{"type":"terminalClose","terminalId":"term-1","channelId":"chan-1","unknown":"ok"}`,
+		},
+		{
+			name: "terminalOpened",
+			raw:  `{"type":"terminalOpened","requestId":"open-1","terminalId":"term-1","sessionId":"sess-1","channelId":"chan-1","shell":"/bin/zsh","cwd":"/tmp/project","startedAt":"2026-04-27T18:00:00Z","unknown":"ok"}`,
+		},
+		{
+			name: "terminalSnapshot",
+			raw:  `{"type":"terminalSnapshot","terminalId":"term-1","sessionId":"sess-1","channelId":"chan-1","seq":8,"dataBase64":"c25hcA==","unknown":"ok"}`,
+		},
+		{
+			name: "terminalExit",
+			raw:  `{"type":"terminalExit","terminalId":"term-1","sessionId":"sess-1","channelId":"chan-1","exitCode":0,"reason":"process_exit","endedAt":"2026-04-27T18:30:00Z","unknown":"ok"}`,
+		},
+		{
+			name: "terminalError",
+			raw:  `{"type":"terminalError","requestId":"open-1","terminalId":"term-1","sessionId":"sess-1","channelId":"chan-1","error":"Unable to start shell","unknown":"ok"}`,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			env, err := ParseEnvelope([]byte(tc.raw))
+			if err != nil {
+				t.Fatalf("parse envelope: %v", err)
+			}
+			if _, err := json.Marshal(env.Payload); err != nil {
+				t.Fatalf("marshal payload: %v", err)
+			}
+		})
+	}
+}
+
 func jsonEqual(a, b any) bool {
 	ja, _ := json.Marshal(a)
 	jb, _ := json.Marshal(b)
@@ -302,6 +478,7 @@ func TestHelloPreviewCapabilitiesRoundTrip(t *testing.T) {
 		Arch:          "arm64",
 		Capabilities: &HelloCapabilities{
 			Stop:                      true,
+			Terminal:                  true,
 			PreviewTunnel:             true,
 			PreviewMaxFrameBytes:      1048576,
 			PreviewChunkBytes:         196608,

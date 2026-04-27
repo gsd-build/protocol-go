@@ -51,6 +51,16 @@ const (
 	MsgTypePreviewWebSocketOpenResult = "previewWebSocketOpenResult"
 	MsgTypePreviewWebSocketData       = "previewWebSocketData"
 	MsgTypePreviewWebSocketClose      = "previewWebSocketClose"
+
+	MsgTypeTerminalOpen     = "terminalOpen"
+	MsgTypeTerminalOpened   = "terminalOpened"
+	MsgTypeTerminalInput    = "terminalInput"
+	MsgTypeTerminalOutput   = "terminalOutput"
+	MsgTypeTerminalSnapshot = "terminalSnapshot"
+	MsgTypeTerminalResize   = "terminalResize"
+	MsgTypeTerminalClose    = "terminalClose"
+	MsgTypeTerminalExit     = "terminalExit"
+	MsgTypeTerminalError    = "terminalError"
 )
 
 // Task is sent from the browser to the daemon to dispatch a user message.
@@ -326,9 +336,103 @@ type ReadFileResult struct {
 	Error     string `json:"error,omitempty"`
 }
 
+// TerminalOpen requests a chat-scoped PTY terminal.
+type TerminalOpen struct {
+	Type          string `json:"type"`
+	RequestID     string `json:"requestId"`
+	TerminalID    string `json:"terminalId,omitempty"`
+	SessionID     string `json:"sessionId"`
+	ChannelID     string `json:"channelId"`
+	Token         string `json:"token,omitempty"`
+	CWD           string `json:"cwd,omitempty"`
+	Cols          int    `json:"cols"`
+	Rows          int    `json:"rows"`
+	IdleTimeoutMs int    `json:"idleTimeoutMs,omitempty"`
+	MaxLifetimeMs int    `json:"maxLifetimeMs,omitempty"`
+}
+
+// TerminalOpened confirms a terminal has started.
+type TerminalOpened struct {
+	Type       string `json:"type"`
+	RequestID  string `json:"requestId"`
+	TerminalID string `json:"terminalId"`
+	SessionID  string `json:"sessionId"`
+	ChannelID  string `json:"channelId"`
+	Shell      string `json:"shell"`
+	CWD        string `json:"cwd"`
+	StartedAt  string `json:"startedAt"`
+}
+
+// TerminalInput carries browser input bytes as base64.
+type TerminalInput struct {
+	Type       string `json:"type"`
+	TerminalID string `json:"terminalId"`
+	ChannelID  string `json:"channelId"`
+	DataBase64 string `json:"dataBase64"`
+}
+
+// TerminalOutput carries terminal output bytes as base64.
+type TerminalOutput struct {
+	Type       string `json:"type"`
+	TerminalID string `json:"terminalId"`
+	SessionID  string `json:"sessionId"`
+	ChannelID  string `json:"channelId"`
+	Seq        int64  `json:"seq"`
+	DataBase64 string `json:"dataBase64"`
+}
+
+// TerminalSnapshot carries bounded scrollback bytes as base64.
+type TerminalSnapshot struct {
+	Type       string `json:"type"`
+	TerminalID string `json:"terminalId"`
+	SessionID  string `json:"sessionId"`
+	ChannelID  string `json:"channelId"`
+	Seq        int64  `json:"seq"`
+	DataBase64 string `json:"dataBase64"`
+}
+
+// TerminalResize resizes the PTY.
+type TerminalResize struct {
+	Type       string `json:"type"`
+	TerminalID string `json:"terminalId"`
+	ChannelID  string `json:"channelId"`
+	Cols       int    `json:"cols"`
+	Rows       int    `json:"rows"`
+}
+
+// TerminalClose terminates the PTY.
+type TerminalClose struct {
+	Type       string `json:"type"`
+	TerminalID string `json:"terminalId"`
+	ChannelID  string `json:"channelId"`
+}
+
+// TerminalExit reports terminal process completion.
+type TerminalExit struct {
+	Type       string `json:"type"`
+	TerminalID string `json:"terminalId"`
+	SessionID  string `json:"sessionId"`
+	ChannelID  string `json:"channelId"`
+	ExitCode   *int   `json:"exitCode,omitempty"`
+	Signal     string `json:"signal,omitempty"`
+	Reason     string `json:"reason"`
+	EndedAt    string `json:"endedAt"`
+}
+
+// TerminalError reports a terminal lifecycle or authorization error.
+type TerminalError struct {
+	Type       string `json:"type"`
+	RequestID  string `json:"requestId,omitempty"`
+	TerminalID string `json:"terminalId,omitempty"`
+	SessionID  string `json:"sessionId,omitempty"`
+	ChannelID  string `json:"channelId"`
+	Error      string `json:"error"`
+}
+
 // HelloCapabilities describes optional daemon protocol support.
 type HelloCapabilities struct {
 	Stop                      bool `json:"stop,omitempty"`
+	Terminal                  bool `json:"terminal,omitempty"`
 	PreviewTunnel             bool `json:"previewTunnel,omitempty"`
 	PreviewMaxFrameBytes      int  `json:"previewMaxFrameBytes,omitempty"`
 	PreviewChunkBytes         int  `json:"previewChunkBytes,omitempty"`

@@ -120,6 +120,24 @@ func payloadForType(msgType string) (any, error) {
 		return &PreviewWebSocketData{}, nil
 	case MsgTypePreviewWebSocketClose:
 		return &PreviewWebSocketClose{}, nil
+	case MsgTypeTerminalOpen:
+		return &TerminalOpen{}, nil
+	case MsgTypeTerminalOpened:
+		return &TerminalOpened{}, nil
+	case MsgTypeTerminalInput:
+		return &TerminalInput{}, nil
+	case MsgTypeTerminalOutput:
+		return &TerminalOutput{}, nil
+	case MsgTypeTerminalSnapshot:
+		return &TerminalSnapshot{}, nil
+	case MsgTypeTerminalResize:
+		return &TerminalResize{}, nil
+	case MsgTypeTerminalClose:
+		return &TerminalClose{}, nil
+	case MsgTypeTerminalExit:
+		return &TerminalExit{}, nil
+	case MsgTypeTerminalError:
+		return &TerminalError{}, nil
 	default:
 		return nil, fmt.Errorf("unknown message type: %q", msgType)
 	}
