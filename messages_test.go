@@ -50,6 +50,11 @@ func TestEnvelopeRoundTrip(t *testing.T) {
 			Capabilities: &HelloCapabilities{
 				Stop: true,
 			},
+			ActiveTasks: []string{"task-a", "task-b"},
+		}},
+		{"welcome", &Welcome{
+			Type:                MsgTypeWelcome,
+			LatestDaemonVersion: "0.2.1",
 		}},
 		{"taskComplete", &TaskComplete{
 			Type:            MsgTypeTaskComplete,
@@ -166,38 +171,6 @@ func TestParseEnvelopeRejectsUnknownType(t *testing.T) {
 	}
 }
 
-func TestHelloRoundTripWithActiveTasks(t *testing.T) {
-	h := &Hello{
-		Type:          MsgTypeHello,
-		MachineID:     "m-1",
-		DaemonVersion: "0.2.0",
-		OS:            "darwin",
-		Arch:          "arm64",
-		ActiveTasks:   []string{"task-a", "task-b"},
-	}
-
-	data, err := json.Marshal(h)
-	if err != nil {
-		t.Fatalf("marshal: %v", err)
-	}
-
-	env, err := ParseEnvelope(data)
-	if err != nil {
-		t.Fatalf("parse: %v", err)
-	}
-
-	got, ok := env.Payload.(*Hello)
-	if !ok {
-		t.Fatalf("expected *Hello, got %T", env.Payload)
-	}
-	if len(got.ActiveTasks) != 2 {
-		t.Fatalf("expected 2 active tasks, got %d", len(got.ActiveTasks))
-	}
-	if got.ActiveTasks[0] != "task-a" || got.ActiveTasks[1] != "task-b" {
-		t.Errorf("unexpected active tasks: %v", got.ActiveTasks)
-	}
-}
-
 func TestHelloOmitsEmptyActiveTasks(t *testing.T) {
 	h := &Hello{
 		Type:          MsgTypeHello,
@@ -221,31 +194,6 @@ func TestHelloOmitsEmptyActiveTasks(t *testing.T) {
 	}
 }
 
-func TestWelcomeRoundTripWithVersion(t *testing.T) {
-	w := &Welcome{
-		Type:                MsgTypeWelcome,
-		LatestDaemonVersion: "0.2.1",
-	}
-
-	data, err := json.Marshal(w)
-	if err != nil {
-		t.Fatalf("marshal: %v", err)
-	}
-
-	env, err := ParseEnvelope(data)
-	if err != nil {
-		t.Fatalf("parse: %v", err)
-	}
-
-	got, ok := env.Payload.(*Welcome)
-	if !ok {
-		t.Fatalf("expected *Welcome, got %T", env.Payload)
-	}
-	if got.LatestDaemonVersion != "0.2.1" {
-		t.Errorf("expected 0.2.1, got %s", got.LatestDaemonVersion)
-	}
-}
-
 func TestWelcomeOmitsEmptyVersion(t *testing.T) {
 	w := &Welcome{
 		Type: MsgTypeWelcome,
@@ -262,75 +210,6 @@ func TestWelcomeOmitsEmptyVersion(t *testing.T) {
 	}
 	if _, exists := raw["latestDaemonVersion"]; exists {
 		t.Error("latestDaemonVersion should be omitted when empty")
-	}
-}
-
-func TestRequestIDRoundTrip(t *testing.T) {
-	requestID := "33333333-3333-3333-3333-333333333333"
-	tp := "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
-
-	task := &Task{
-		Type:           MsgTypeTask,
-		TaskID:         "11111111-1111-1111-1111-111111111111",
-		SessionID:      "22222222-2222-2222-2222-222222222222",
-		ChannelID:      "ch-1",
-		Prompt:         "hello",
-		Model:          "claude-opus-4-6[1m]",
-		Effort:         "max",
-		PermissionMode: "acceptEdits",
-		CWD:            "/tmp",
-		RequestID:      requestID,
-		Traceparent:    tp,
-	}
-
-	data, err := json.Marshal(task)
-	if err != nil {
-		t.Fatalf("marshal: %v", err)
-	}
-
-	env, err := ParseEnvelope(data)
-	if err != nil {
-		t.Fatalf("parse: %v", err)
-	}
-
-	got, ok := env.Payload.(*Task)
-	if !ok {
-		t.Fatalf("expected *Task, got %T", env.Payload)
-	}
-	if got.RequestID != requestID {
-		t.Errorf("requestId mismatch: want %s, got %s", requestID, got.RequestID)
-	}
-	if got.Traceparent != tp {
-		t.Errorf("traceparent mismatch: want %s, got %s", tp, got.Traceparent)
-	}
-}
-
-func TestTaskEngineRoundTrip(t *testing.T) {
-	task := &Task{
-		Type:      MsgTypeTask,
-		TaskID:    "11111111-1111-1111-1111-111111111111",
-		SessionID: "22222222-2222-2222-2222-222222222222",
-		ChannelID: "ch-1",
-		Prompt:    "hello",
-		Engine:    "pi",
-	}
-
-	data, err := json.Marshal(task)
-	if err != nil {
-		t.Fatalf("marshal: %v", err)
-	}
-
-	env, err := ParseEnvelope(data)
-	if err != nil {
-		t.Fatalf("parse: %v", err)
-	}
-
-	got, ok := env.Payload.(*Task)
-	if !ok {
-		t.Fatalf("expected *Task, got %T", env.Payload)
-	}
-	if got.Engine != "pi" {
-		t.Fatalf("engine mismatch: want pi, got %q", got.Engine)
 	}
 }
 
