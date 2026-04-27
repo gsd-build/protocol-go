@@ -128,7 +128,6 @@ type TaskComplete struct {
 	OutputTokens    int64  `json:"outputTokens"`
 	CostUSD         string `json:"costUsd"`
 	DurationMs      int    `json:"durationMs"`
-	ResultSummary   string `json:"resultSummary,omitempty"`
 	RequestID       string `json:"requestId,omitempty"`
 	Traceparent     string `json:"traceparent,omitempty"` // W3C trace context
 }
