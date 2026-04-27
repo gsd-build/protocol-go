@@ -349,6 +349,7 @@ Daemon-to-browser lifecycle message for manual and automatic compaction.
 | Field | Type | Notes |
 |---|---|---|
 | stop | boolean? | Daemon accepts stop messages for active task cancellation. |
+| terminal | boolean? | Daemon accepts terminal lifecycle and PTY control messages. |
 | previewTunnel | boolean? | Daemon accepts remote localhost preview messages. |
 | previewMaxFrameBytes | int? | Maximum encoded preview frame size. |
 | previewChunkBytes | int? | Raw preview body chunk target. |
@@ -359,7 +360,7 @@ Daemon-to-browser lifecycle message for manual and automatic compaction.
 | Field | Type |
 |---|---|
 | type | "welcome" |
-| latestDaemonVersion | string? | Optional latest daemon version for update prompts |
+| latestDaemonVersion | string? Optional latest daemon version for update prompts |
 
 ## Remote Localhost Preview
 
@@ -386,3 +387,113 @@ Preview traffic is owner-approved, loopback-only, and routed as explicit protoco
 ### Stream Cancellation
 
 `previewStreamCancel` cancels local IO for the stream. Receivers treat duplicate, missing, or out-of-order chunks as stream errors.
+
+## Terminal Messages
+
+Terminal messages open and control a chat-scoped PTY on the paired daemon machine. Browser-originated `terminalOpen` carries `token`, while relay-to-daemon `terminalOpen` carries server-derived `terminalId`, `cwd`, `idleTimeoutMs`, and `maxLifetimeMs`. Terminal input and output bytes are base64-encoded live transport data.
+
+### Capability
+
+Daemons advertise terminal support through `hello.capabilities.terminal`.
+
+### `terminalOpen`
+
+| Field | Type | Notes |
+|---|---|---|
+| type | "terminalOpen" | |
+| requestId | string | Correlates the open request with opened/error responses. |
+| terminalId | string? | Relay-generated terminal id for daemon-bound opens. |
+| sessionId | uuid | Chat session scope. |
+| channelId | string | Owning browser channel. |
+| token | string? | Browser terminal-open capability. |
+| cwd | string? | Server-derived daemon working directory. |
+| cols | int | Requested terminal columns. |
+| rows | int | Requested terminal rows. |
+| idleTimeoutMs | int? | Daemon idle/disconnect timeout. |
+| maxLifetimeMs | int? | Daemon maximum terminal lifetime. |
+
+### `terminalOpened`
+
+| Field | Type |
+|---|---|
+| type | "terminalOpened" |
+| requestId | string |
+| terminalId | string |
+| sessionId | uuid |
+| channelId | string |
+| shell | string |
+| cwd | string |
+| startedAt | iso8601 string |
+
+### `terminalInput`
+
+| Field | Type |
+|---|---|
+| type | "terminalInput" |
+| terminalId | string |
+| channelId | string |
+| dataBase64 | string |
+
+### `terminalOutput`
+
+| Field | Type |
+|---|---|
+| type | "terminalOutput" |
+| terminalId | string |
+| sessionId | uuid |
+| channelId | string |
+| seq | int64 |
+| dataBase64 | string |
+
+### `terminalSnapshot`
+
+| Field | Type |
+|---|---|
+| type | "terminalSnapshot" |
+| terminalId | string |
+| sessionId | uuid |
+| channelId | string |
+| seq | int64 |
+| dataBase64 | string |
+
+### `terminalResize`
+
+| Field | Type |
+|---|---|
+| type | "terminalResize" |
+| terminalId | string |
+| channelId | string |
+| cols | int |
+| rows | int |
+
+### `terminalClose`
+
+| Field | Type |
+|---|---|
+| type | "terminalClose" |
+| terminalId | string |
+| channelId | string |
+
+### `terminalExit`
+
+| Field | Type |
+|---|---|
+| type | "terminalExit" |
+| terminalId | string |
+| sessionId | uuid |
+| channelId | string |
+| exitCode | int? |
+| signal | string? |
+| reason | string |
+| endedAt | iso8601 string |
+
+### `terminalError`
+
+| Field | Type |
+|---|---|
+| type | "terminalError" |
+| requestId | string? |
+| terminalId | string? |
+| sessionId | uuid? |
+| channelId | string |
+| error | string |
