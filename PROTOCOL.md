@@ -15,6 +15,16 @@ Every message is a JSON object with a `type` field:
 { "type": "<name>", ...fields }
 ```
 
+Receivers bound WebSocket text frames before unmarshalling them into typed
+payloads. The Go bindings expose `ParseEnvelopeWithLimits` and
+`ValidateEnvelopeFrame` for frame size, JSON nesting depth, object field count,
+and array item count validation. `ParseEnvelope` is the raw envelope parser.
+
+Request-scoped handlers bind responses to the originating request and session
+using `requestId`, `sessionId`, and `channelId` where those fields exist. The Go
+bindings expose `ExtractBinding`, `ValidateRequestBinding`, and
+`ValidateSessionBinding` for these checks.
+
 ## Browser → Daemon messages
 
 ### `task`

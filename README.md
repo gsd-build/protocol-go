@@ -29,12 +29,22 @@ case *protocol.Task:
     _ = msg.Prompt
 }
 
-// Encode an outgoing frame — marshal the payload struct directly:
+// Decode an incoming frame with transport bounds:
+env, err = protocol.ParseEnvelopeWithLimits(data, protocol.DefaultEnvelopeLimits())
+if err != nil {
+    // close or reject the frame
+}
+
+// Encode an outgoing frame - marshal the payload struct directly:
 data, _ := json.Marshal(&protocol.Hello{
     Type:      protocol.MsgTypeHello,
     MachineID: "machine-1",
 })
 ```
+
+`protocol.ExtractBinding`, `protocol.ValidateRequestBinding`, and
+`protocol.ValidateSessionBinding` expose request/session correlation checks for
+relay and daemon handlers.
 
 See [PROTOCOL.md](./PROTOCOL.md) for the wire format specification.
 
