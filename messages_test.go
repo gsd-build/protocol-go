@@ -711,6 +711,61 @@ func TestTraceparentOmittedWhenEmpty(t *testing.T) {
 	}
 }
 
+func TestTaskContextRefsRoundTrip(t *testing.T) {
+	size := int64(42)
+	in := Task{
+		Type:      MsgTypeTask,
+		TaskID:    "task_123",
+		SessionID: "session_123",
+		Prompt:    "inspect this",
+		ContextRefs: []ContextRef{
+			{Kind: "file", Path: "apps/web/src/app/page.tsx", Name: "page.tsx", Size: &size, ModifiedAt: "2026-04-28T12:00:00Z"},
+			{Kind: "folder", Path: "apps/web/src/components", Name: "components"},
+		},
+	}
+
+	raw, err := json.Marshal(in)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var out Task
+	if err := json.Unmarshal(raw, &out); err != nil {
+		t.Fatal(err)
+	}
+
+	if len(out.ContextRefs) != 2 {
+		t.Fatalf("expected 2 context refs, got %d", len(out.ContextRefs))
+	}
+	if out.ContextRefs[0].Path != "apps/web/src/app/page.tsx" {
+		t.Fatalf("unexpected file path %q", out.ContextRefs[0].Path)
+	}
+}
+
+func TestHelloCapabilitiesContextRefsRoundTrip(t *testing.T) {
+	in := Hello{
+		Type: MsgTypeHello,
+		Capabilities: &HelloCapabilities{
+			Terminal:    true,
+			ContextRefs: true,
+		},
+	}
+
+	raw, err := json.Marshal(in)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var out Hello
+	if err := json.Unmarshal(raw, &out); err != nil {
+		t.Fatal(err)
+	}
+
+	if out.Capabilities == nil || !out.Capabilities.ContextRefs {
+		t.Fatal("expected contextRefs capability")
+	}
+}
+
 func TestTraceID(t *testing.T) {
 	cases := []struct {
 		traceparent string

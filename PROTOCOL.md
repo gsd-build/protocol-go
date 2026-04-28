@@ -38,6 +38,30 @@ Dispatch a user message to a session.
 | requestId | uuid? | Optional root correlation ID for request-scoped logging. |
 | traceparent | string? | W3C trace context. |
 | imageUrls | string[]? | User-attached image URLs. |
+| contextRefs | ContextRef[]? | Project-relative file and folder references selected in the cloud composer. |
+
+`ContextRef`:
+
+| Field | Type | Notes |
+|---|---|---|
+| kind | "file" \| "folder" | |
+| path | string | Project-relative path. |
+| name | string | Display name for the referenced path. |
+| size | int? | File size in bytes when known. |
+| modifiedAt | string? | ISO timestamp when known. |
+
+`Task.contextRefs` carries project-relative file and folder references selected in the cloud composer. The relay forwards this field only to daemons that advertise `Hello.capabilities.contextRefs`.
+
+```json
+{
+  "type": "task",
+  "prompt": "Use these files",
+  "contextRefs": [
+    { "kind": "file", "path": "apps/web/src/app/page.tsx", "name": "page.tsx" },
+    { "kind": "folder", "path": "apps/web/src/components", "name": "components" }
+  ]
+}
+```
 
 ### `stop`
 Interrupt the current Claude process for a session.
@@ -354,6 +378,7 @@ Daemon-to-browser lifecycle message for manual and automatic compaction.
 |---|---|---|
 | stop | boolean? | Daemon accepts stop messages for active task cancellation. |
 | terminal | boolean? | Daemon accepts terminal lifecycle and PTY control messages. |
+| contextRefs | boolean? | Daemon resolves task context references before task execution. |
 | previewTunnel | boolean? | Daemon accepts remote localhost preview messages. |
 | previewMaxFrameBytes | int? | Maximum encoded preview frame size. |
 | previewChunkBytes | int? | Raw preview body chunk target. |
