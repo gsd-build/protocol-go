@@ -20,6 +20,8 @@ const (
 	MsgTypeReadFile                        = "readFile"
 	MsgTypeMkDir                           = "mkDir"
 	MsgTypeMkDirResult                     = "mkDirResult"
+	MsgTypeListSkills                      = "listSkills"
+	MsgTypeListSkillsResult                = "listSkillsResult"
 	MsgTypeCompactRequest      MessageType = "compactRequest"
 	MsgTypeContextStatsRequest MessageType = "contextStatsRequest"
 
@@ -330,6 +332,33 @@ type MkDir struct {
 	Path      string `json:"path"`
 }
 
+// Skill is a locally installed agent skill discovered on the daemon machine.
+type Skill struct {
+	Name        string `json:"name"`
+	Description string `json:"description,omitempty"`
+	Path        string `json:"path"`
+	Scope       string `json:"scope"`
+}
+
+// ListSkills asks the daemon to list available skills for a working directory.
+type ListSkills struct {
+	Type      string `json:"type"`
+	RequestID string `json:"requestId"`
+	ChannelID string `json:"channelId"`
+	MachineID string `json:"machineId"`
+	CWD       string `json:"cwd"`
+}
+
+// ListSkillsResult is the daemon's response to a ListSkills request.
+type ListSkillsResult struct {
+	Type      string  `json:"type"`
+	RequestID string  `json:"requestId"`
+	ChannelID string  `json:"channelId"`
+	OK        bool    `json:"ok"`
+	Skills    []Skill `json:"skills,omitempty"`
+	Error     string  `json:"error,omitempty"`
+}
+
 // MkDirResult is the daemon's response to a MkDir request.
 type MkDirResult struct {
 	Type      string `json:"type"`
@@ -453,6 +482,7 @@ type HelloCapabilities struct {
 	PreviewChunkBytes         int  `json:"previewChunkBytes,omitempty"`
 	PreviewWebSocketProtocols bool `json:"previewWebSocketProtocols,omitempty"`
 	LocalServerDetection      bool `json:"localServerDetection,omitempty"`
+	Skills                    bool `json:"skills,omitempty"`
 }
 
 // Hello is the first frame sent by the daemon after connecting.

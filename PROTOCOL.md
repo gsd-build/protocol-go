@@ -166,6 +166,20 @@ Browser-to-daemon control message. The daemon executes Pi RPC `get_session_stats
 | machineId | uuid |
 | path | string |
 
+### `listSkills`
+
+List locally available daemon skills for a project working directory. The
+daemon returns bounded metadata from known skill roots; it does not return skill
+file bodies.
+
+| Field | Type |
+|---|---|
+| type | "listSkills" |
+| requestId | uuid |
+| channelId | string |
+| machineId | uuid |
+| cwd | string | Absolute project working directory used for local `.claude/skills` ancestry lookup. |
+
 ## Daemon → Browser messages
 
 ### `stream`
@@ -368,6 +382,26 @@ Daemon-to-browser lifecycle message for manual and automatic compaction.
 | ok | boolean |
 | error | string? |
 
+### `listSkillsResult`
+
+| Field | Type |
+|---|---|
+| type | "listSkillsResult" |
+| requestId | uuid |
+| channelId | string |
+| ok | boolean |
+| skills | Skill[]? |
+| error | string? |
+
+`Skill`:
+
+| Field | Type | Notes |
+|---|---|---|
+| name | string | Skill command name. |
+| description | string? | Short description from `SKILL.md` frontmatter. |
+| path | string | Absolute path to the skill `SKILL.md`. |
+| scope | string | Discovery scope, e.g. `"home"` or `"project"`. |
+
 ## Daemon ↔ Relay control messages
 
 ### `hello` (daemon → relay, first frame after connect)
@@ -394,6 +428,7 @@ Daemon-to-browser lifecycle message for manual and automatic compaction.
 | previewChunkBytes | int? | Raw preview body chunk target. |
 | previewWebSocketProtocols | boolean? | Daemon forwards requested WebSocket subprotocols. |
 | localServerDetection | boolean? | Daemon reports verified loopback web servers started by task tools. |
+| skills | boolean? | Daemon accepts `listSkills` and can pass explicit Claude skill files into Pi. |
 
 ### `welcome` (relay → daemon, response to hello)
 

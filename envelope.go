@@ -77,6 +77,10 @@ func payloadForType(msgType string) (any, error) {
 		return &MkDir{}, nil
 	case MsgTypeMkDirResult:
 		return &MkDirResult{}, nil
+	case MsgTypeListSkills:
+		return &ListSkills{}, nil
+	case MsgTypeListSkillsResult:
+		return &ListSkillsResult{}, nil
 	case MsgTypeCompactRequest:
 		return &CompactRequest{}, nil
 	case MsgTypeContextStatsRequest:
