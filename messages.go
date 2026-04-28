@@ -51,6 +51,7 @@ const (
 	MsgTypePreviewWebSocketOpenResult = "previewWebSocketOpenResult"
 	MsgTypePreviewWebSocketData       = "previewWebSocketData"
 	MsgTypePreviewWebSocketClose      = "previewWebSocketClose"
+	MsgTypeLocalServerDetected        = "localServerDetected"
 
 	MsgTypeTerminalOpen     = "terminalOpen"
 	MsgTypeTerminalOpened   = "terminalOpened"
@@ -451,6 +452,7 @@ type HelloCapabilities struct {
 	PreviewMaxFrameBytes      int  `json:"previewMaxFrameBytes,omitempty"`
 	PreviewChunkBytes         int  `json:"previewChunkBytes,omitempty"`
 	PreviewWebSocketProtocols bool `json:"previewWebSocketProtocols,omitempty"`
+	LocalServerDetection      bool `json:"localServerDetection,omitempty"`
 }
 
 // Hello is the first frame sent by the daemon after connecting.
@@ -572,4 +574,18 @@ type PreviewWebSocketClose struct {
 	StreamID string `json:"streamId"`
 	Code     int    `json:"code,omitempty"`
 	Reason   string `json:"reason,omitempty"`
+}
+
+type LocalServerDetected struct {
+	Type       string `json:"type"`
+	SessionID  string `json:"sessionId"`
+	ChannelID  string `json:"channelId"`
+	TaskID     string `json:"taskId,omitempty"`
+	ToolUseID  string `json:"toolUseId,omitempty"`
+	Host       string `json:"host"`
+	Port       int    `json:"port"`
+	URL        string `json:"url"`
+	Command    string `json:"command,omitempty"`
+	Source     string `json:"source"`
+	DetectedAt string `json:"detectedAt"`
 }

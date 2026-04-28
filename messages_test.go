@@ -349,6 +349,19 @@ func TestEnvelopeRoundTrip(t *testing.T) {
 			Code:     1000,
 			Reason:   "normal",
 		}},
+		{"localServerDetected", &LocalServerDetected{
+			Type:       MsgTypeLocalServerDetected,
+			SessionID:  "session_123",
+			ChannelID:  "channel_123",
+			TaskID:     "task_123",
+			ToolUseID:  "toolu_123",
+			Host:       "127.0.0.1",
+			Port:       5173,
+			URL:        "http://127.0.0.1:5173/",
+			Command:    "pnpm dev",
+			Source:     "tool_output",
+			DetectedAt: "2026-04-27T20:00:00Z",
+		}},
 	}
 
 	for _, tc := range cases {
@@ -433,6 +446,34 @@ func TestTerminalEnvelopeRejectsInvalidFieldTypes(t *testing.T) {
 	}
 }
 
+func TestLocalServerDetectedRejectsInvalidFieldTypes(t *testing.T) {
+	cases := []struct {
+		name string
+		raw  string
+	}{
+		{
+			name: "session id number",
+			raw:  `{"type":"` + MsgTypeLocalServerDetected + `","sessionId":123,"channelId":"channel_123","host":"127.0.0.1","port":5173,"url":"http://127.0.0.1:5173/","detectedAt":"2026-04-27T20:00:00Z"}`,
+		},
+		{
+			name: "port string",
+			raw:  `{"type":"` + MsgTypeLocalServerDetected + `","sessionId":"session_123","channelId":"channel_123","host":"127.0.0.1","port":"5173","url":"http://127.0.0.1:5173/","detectedAt":"2026-04-27T20:00:00Z"}`,
+		},
+		{
+			name: "source object",
+			raw:  `{"type":"` + MsgTypeLocalServerDetected + `","sessionId":"session_123","channelId":"channel_123","host":"127.0.0.1","port":5173,"url":"http://127.0.0.1:5173/","source":{},"detectedAt":"2026-04-27T20:00:00Z"}`,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if _, err := ParseEnvelope([]byte(tc.raw)); err == nil {
+				t.Fatal("expected parse error")
+			}
+		})
+	}
+}
+
 func TestTerminalEnvelopeIgnoresUnknownFields(t *testing.T) {
 	cases := []struct {
 		name string
@@ -486,6 +527,39 @@ func TestTerminalEnvelopeIgnoresUnknownFields(t *testing.T) {
 				t.Fatalf("marshal payload: %v", err)
 			}
 		})
+	}
+}
+
+func TestLocalServerDetectedIgnoresUnknownFields(t *testing.T) {
+	want := &LocalServerDetected{
+		Type:       MsgTypeLocalServerDetected,
+		SessionID:  "session_123",
+		ChannelID:  "channel_123",
+		TaskID:     "task_123",
+		ToolUseID:  "toolu_123",
+		Host:       "127.0.0.1",
+		Port:       5173,
+		URL:        "http://127.0.0.1:5173/",
+		Command:    "pnpm dev",
+		Source:     "tool_output",
+		DetectedAt: "2026-04-27T20:00:00Z",
+	}
+
+	raw := []byte(`{"type":"` + MsgTypeLocalServerDetected + `","sessionId":"session_123","channelId":"channel_123","taskId":"task_123","toolUseId":"toolu_123","host":"127.0.0.1","port":5173,"url":"http://127.0.0.1:5173/","command":"pnpm dev","source":"tool_output","detectedAt":"2026-04-27T20:00:00Z","unexpected":"ok","nested":{"ignored":true}}`)
+	env, err := ParseEnvelope(raw)
+	if err != nil {
+		t.Fatalf("parse envelope: %v", err)
+	}
+
+	got, ok := env.Payload.(*LocalServerDetected)
+	if !ok {
+		t.Fatalf("payload type = %T, want *LocalServerDetected", env.Payload)
+	}
+	if !jsonEqual(mustJSONMap(t, want), mustJSONMap(t, got)) {
+		t.Fatalf("payload mismatch: want %#v, got %#v", want, got)
+	}
+	if _, err := json.Marshal(got); err != nil {
+		t.Fatalf("marshal payload: %v", err)
 	}
 }
 
@@ -619,6 +693,7 @@ func TestHelloPreviewCapabilitiesRoundTrip(t *testing.T) {
 			PreviewMaxFrameBytes:      1048576,
 			PreviewChunkBytes:         196608,
 			PreviewWebSocketProtocols: true,
+			LocalServerDetection:      true,
 		},
 	}
 	data, err := json.Marshal(msg)
@@ -632,6 +707,9 @@ func TestHelloPreviewCapabilitiesRoundTrip(t *testing.T) {
 	got := env.Payload.(*Hello)
 	if got.Capabilities == nil || !got.Capabilities.PreviewTunnel {
 		t.Fatalf("preview capability missing after round trip: %#v", got.Capabilities)
+	}
+	if !got.Capabilities.LocalServerDetection {
+		t.Fatalf("local server detection capability missing after round trip: %#v", got.Capabilities)
 	}
 }
 
