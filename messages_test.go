@@ -59,6 +59,61 @@ func TestEnvelopeRoundTrip(t *testing.T) {
 			},
 			ActiveTasks: []string{"task-a", "task-b"},
 		}},
+		{"browserSessionOpen", &BrowserSessionOpen{
+			Type:       MsgTypeBrowserSessionOpen,
+			RequestID:  "req_browser_1",
+			GrantID:    "grant_123",
+			SessionID:  "session_123",
+			ProjectID:  "project_123",
+			TaskID:     "task_123",
+			ChannelID:  "channel_123",
+			MachineID:  "machine_123",
+			IdentityID: "identity_123",
+			Mode:       "identity",
+			ExpiresAt:  "2026-04-28T20:00:00Z",
+		}},
+		{"browserFrame", &BrowserFrame{
+			Type:        MsgTypeBrowserFrame,
+			BrowserID:   "browser_123",
+			SessionID:   "session_123",
+			ChannelID:   "channel_123",
+			Seq:         1,
+			ContentType: "image/jpeg",
+			DataBase64:  "aGVsbG8=",
+			Width:       1280,
+			Height:      720,
+			CapturedAt:  "2026-04-28T20:00:01Z",
+		}},
+		{"browserControlClaim", &BrowserControlClaim{
+			Type:      MsgTypeBrowserControlClaim,
+			BrowserID: "browser_123",
+			SessionID: "session_123",
+			ChannelID: "channel_123",
+			Owner:     "lex",
+			Reason:    "pointer",
+		}},
+		{"browserToolCall", &BrowserToolCall{
+			Type:       MsgTypeBrowserToolCall,
+			BrowserID:  "browser_123",
+			GrantID:    "grant_123",
+			TaskID:     "task_123",
+			ToolUseID:  "toolu_123",
+			Method:     "navigate",
+			ParamsJSON: json.RawMessage(`{"url":"https://example.com"}`),
+		}},
+		{"browserSensitiveActionRequest", &BrowserSensitiveActionRequest{
+			Type:      MsgTypeBrowserSensitiveActionRequest,
+			BrowserID: "browser_123",
+			RequestID: "sensitive_123",
+			SessionID: "session_123",
+			ChannelID: "channel_123",
+			TaskID:    "task_123",
+			ToolUseID: "toolu_123",
+			Category:  "external_send",
+			Summary:   "Submit contact form",
+			Origin:    "https://example.com",
+			ExpiresAt: "2026-04-28T20:05:00Z",
+		}},
 		{"welcome", &Welcome{
 			Type:                MsgTypeWelcome,
 			LatestDaemonVersion: "0.2.1",
@@ -417,6 +472,33 @@ func TestEnvelopeRoundTrip(t *testing.T) {
 				t.Errorf("payload mismatch after round trip: want %v, got %v", original, final)
 			}
 		})
+	}
+}
+
+func TestHelloBrowserCapabilitiesRoundTrip(t *testing.T) {
+	msg := &Hello{
+		Type:      MsgTypeHello,
+		MachineID: "machine_123",
+		Capabilities: &HelloCapabilities{
+			BrowserSessions:                true,
+			BrowserFrameStream:             true,
+			BrowserUserControl:             true,
+			BrowserIdentities:              true,
+			BrowserSensitiveActionApproval: true,
+			BrowserMaxFrameBytes:           262144,
+		},
+	}
+	data, err := json.Marshal(msg)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	env, err := ParseEnvelope(data)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	got := env.Payload.(*Hello)
+	if got.Capabilities == nil || !got.Capabilities.BrowserSessions {
+		t.Fatalf("browser capabilities missing: %#v", got.Capabilities)
 	}
 }
 

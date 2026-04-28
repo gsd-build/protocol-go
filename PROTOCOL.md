@@ -591,3 +591,31 @@ Daemons advertise terminal support through `hello.capabilities.terminal`.
 | sessionId | uuid? |
 | channelId | string |
 | error | string |
+
+## Shared Browser Sessions
+
+Shared browser sessions let a browser client and daemon coordinate a task-scoped local browser controlled through `gsd-browser`.
+
+### Capability
+
+`browserSessions`, `browserFrameStream`, `browserUserControl`, `browserIdentities`, `browserSensitiveActionApproval`, and `browserMaxFrameBytes` describe daemon browser support.
+
+### Lifecycle
+
+`browserSessionOpen` starts or attaches to a local browser session for one grant. `browserSessionClose` revokes that session. `browserSessionError` reports stable error codes.
+
+### Visual State
+
+`browserFrame` carries bounded screenshot frames. `browserCursor`, `browserNavigation`, and `browserAction` carry compact visible state and action metadata.
+
+### Control
+
+`browserControlClaim`, `browserControlRelease`, and `browserUserInput` coordinate Lex control. Tool calls execute while control owner is `agent`.
+
+### Tool Calls
+
+`browserToolCall` and `browserToolResult` represent agent browser tool execution. The daemon validates active grant state before executing each call.
+
+### Sensitive Actions
+
+`browserSensitiveActionRequest` pauses execution and asks Lex for approval. `browserSensitiveActionResponse` resumes or denies the action.
