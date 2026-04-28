@@ -108,6 +108,8 @@ Browser-to-daemon control message. The daemon executes Pi RPC `get_session_stats
 | channelId | string |
 | machineId | uuid |
 | path | string |
+| limit | int? |
+| cursor | string? |
 
 ### `readFile`
 
@@ -301,6 +303,8 @@ Daemon-to-browser lifecycle message for manual and automatic compaction.
 | channelId | string |
 | ok | boolean |
 | entries | []BrowseEntry? |
+| hasMore | boolean? |
+| nextCursor | string? |
 | error | string? |
 
 `BrowseEntry`:

@@ -128,6 +128,32 @@ func TestEnvelopeRoundTrip(t *testing.T) {
 			RequestID: "33333333-3333-3333-3333-333333333333",
 			Answer:    `["date-fns","custom note"]`,
 		}},
+		{"browseDir paginated", &BrowseDir{
+			Type:      MsgTypeBrowseDir,
+			RequestID: "browse-1",
+			ChannelID: "chan-1",
+			MachineID: "machine-1",
+			Path:      "/tmp/project",
+			Limit:     200,
+			Cursor:    "200",
+		}},
+		{"browseDirResult paginated", &BrowseDirResult{
+			Type:       MsgTypeBrowseDirResult,
+			RequestID:  "browse-1",
+			ChannelID:  "chan-1",
+			OK:         true,
+			HasMore:    true,
+			NextCursor: "400",
+			Entries: []BrowseEntry{
+				{
+					Name:        "src",
+					Path:        "/tmp/project/src",
+					IsDirectory: true,
+					Size:        64,
+					ModifiedAt:  "2026-04-27T18:00:00Z",
+				},
+			},
+		}},
 		{"terminalOpen", &TerminalOpen{
 			Type:      MsgTypeTerminalOpen,
 			RequestID: "open-1",
@@ -463,10 +489,120 @@ func TestTerminalEnvelopeIgnoresUnknownFields(t *testing.T) {
 	}
 }
 
+func TestBrowsePaginationFieldsCompatibility(t *testing.T) {
+	cases := []struct {
+		name string
+		raw  string
+		want any
+	}{
+		{
+			name: "browseDir without pagination",
+			raw:  `{"type":"browseDir","requestId":"browse-1","channelId":"chan-1","machineId":"machine-1","path":"/tmp/project"}`,
+			want: &BrowseDir{
+				Type:      MsgTypeBrowseDir,
+				RequestID: "browse-1",
+				ChannelID: "chan-1",
+				MachineID: "machine-1",
+				Path:      "/tmp/project",
+			},
+		},
+		{
+			name: "browseDir with pagination",
+			raw:  `{"type":"browseDir","requestId":"browse-1","channelId":"chan-1","machineId":"machine-1","path":"/tmp/project","limit":200,"cursor":"200","extraPaginationKey":"ignored"}`,
+			want: &BrowseDir{
+				Type:      MsgTypeBrowseDir,
+				RequestID: "browse-1",
+				ChannelID: "chan-1",
+				MachineID: "machine-1",
+				Path:      "/tmp/project",
+				Limit:     200,
+				Cursor:    "200",
+			},
+		},
+		{
+			name: "browseDirResult without pagination",
+			raw:  `{"type":"browseDirResult","requestId":"browse-1","channelId":"chan-1","ok":true,"entries":[]}`,
+			want: &BrowseDirResult{
+				Type:      MsgTypeBrowseDirResult,
+				RequestID: "browse-1",
+				ChannelID: "chan-1",
+				OK:        true,
+				Entries:   []BrowseEntry{},
+			},
+		},
+		{
+			name: "browseDirResult with pagination",
+			raw:  `{"type":"browseDirResult","requestId":"browse-1","channelId":"chan-1","ok":true,"entries":[],"hasMore":true,"nextCursor":"400","extraPaginationKey":"ignored"}`,
+			want: &BrowseDirResult{
+				Type:       MsgTypeBrowseDirResult,
+				RequestID:  "browse-1",
+				ChannelID:  "chan-1",
+				OK:         true,
+				Entries:    []BrowseEntry{},
+				HasMore:    true,
+				NextCursor: "400",
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			env, err := ParseEnvelope([]byte(tc.raw))
+			if err != nil {
+				t.Fatalf("parse envelope: %v", err)
+			}
+			if !jsonEqual(mustJSONMap(t, tc.want), mustJSONMap(t, env.Payload)) {
+				t.Fatalf("payload mismatch: want %#v, got %#v", tc.want, env.Payload)
+			}
+		})
+	}
+}
+
+func TestBrowsePaginationFieldsRejectInvalidTypes(t *testing.T) {
+	cases := []struct {
+		name string
+		raw  string
+	}{
+		{
+			name: "browseDir limit string",
+			raw:  `{"type":"browseDir","requestId":"browse-1","channelId":"chan-1","machineId":"machine-1","path":"/tmp/project","limit":"200"}`,
+		},
+		{
+			name: "browseDirResult hasMore string",
+			raw:  `{"type":"browseDirResult","requestId":"browse-1","channelId":"chan-1","ok":true,"hasMore":"true"}`,
+		},
+		{
+			name: "browseDirResult hasMore number",
+			raw:  `{"type":"browseDirResult","requestId":"browse-1","channelId":"chan-1","ok":true,"hasMore":1}`,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if _, err := ParseEnvelope([]byte(tc.raw)); err == nil {
+				t.Fatal("expected parse error")
+			}
+		})
+	}
+}
+
 func jsonEqual(a, b any) bool {
 	ja, _ := json.Marshal(a)
 	jb, _ := json.Marshal(b)
 	return string(ja) == string(jb)
+}
+
+func mustJSONMap(t *testing.T, value any) map[string]any {
+	t.Helper()
+	data, err := json.Marshal(value)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	var out map[string]any
+	if err := json.Unmarshal(data, &out); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	return out
 }
 
 func TestHelloPreviewCapabilitiesRoundTrip(t *testing.T) {

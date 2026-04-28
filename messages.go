@@ -113,6 +113,8 @@ type BrowseDir struct {
 	ChannelID string `json:"channelId"`
 	MachineID string `json:"machineId"`
 	Path      string `json:"path"`
+	Limit     int    `json:"limit,omitempty"`
+	Cursor    string `json:"cursor,omitempty"`
 }
 
 // ReadFile reads a file from the daemon's filesystem.
@@ -299,12 +301,14 @@ type BrowseEntry struct {
 
 // BrowseDirResult is the daemon's response to a BrowseDir request.
 type BrowseDirResult struct {
-	Type      string        `json:"type"`
-	RequestID string        `json:"requestId"`
-	ChannelID string        `json:"channelId"`
-	OK        bool          `json:"ok"`
-	Entries   []BrowseEntry `json:"entries,omitempty"`
-	Error     string        `json:"error,omitempty"`
+	Type       string        `json:"type"`
+	RequestID  string        `json:"requestId"`
+	ChannelID  string        `json:"channelId"`
+	OK         bool          `json:"ok"`
+	Entries    []BrowseEntry `json:"entries,omitempty"`
+	HasMore    bool          `json:"hasMore,omitempty"`
+	NextCursor string        `json:"nextCursor,omitempty"`
+	Error      string        `json:"error,omitempty"`
 }
 
 // MkDir asks the daemon to create a directory.
