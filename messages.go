@@ -64,6 +64,23 @@ const (
 	MsgTypeTerminalClose    = "terminalClose"
 	MsgTypeTerminalExit     = "terminalExit"
 	MsgTypeTerminalError    = "terminalError"
+
+	MsgTypeBrowserSessionOpen             MessageType = "browserSessionOpen"
+	MsgTypeBrowserSessionOpened           MessageType = "browserSessionOpened"
+	MsgTypeBrowserSessionClose            MessageType = "browserSessionClose"
+	MsgTypeBrowserSessionClosed           MessageType = "browserSessionClosed"
+	MsgTypeBrowserSessionError            MessageType = "browserSessionError"
+	MsgTypeBrowserFrame                   MessageType = "browserFrame"
+	MsgTypeBrowserCursor                  MessageType = "browserCursor"
+	MsgTypeBrowserNavigation              MessageType = "browserNavigation"
+	MsgTypeBrowserAction                  MessageType = "browserAction"
+	MsgTypeBrowserToolCall                MessageType = "browserToolCall"
+	MsgTypeBrowserToolResult              MessageType = "browserToolResult"
+	MsgTypeBrowserControlClaim            MessageType = "browserControlClaim"
+	MsgTypeBrowserControlRelease          MessageType = "browserControlRelease"
+	MsgTypeBrowserUserInput               MessageType = "browserUserInput"
+	MsgTypeBrowserSensitiveActionRequest  MessageType = "browserSensitiveActionRequest"
+	MsgTypeBrowserSensitiveActionResponse MessageType = "browserSensitiveActionResponse"
 )
 
 type ContextRef struct {
@@ -473,17 +490,203 @@ type TerminalError struct {
 	Error      string `json:"error"`
 }
 
+type BrowserSessionOpen struct {
+	Type       MessageType `json:"type"`
+	RequestID  string      `json:"requestId"`
+	GrantID    string      `json:"grantId"`
+	SessionID  string      `json:"sessionId"`
+	ProjectID  string      `json:"projectId"`
+	TaskID     string      `json:"taskId"`
+	ChannelID  string      `json:"channelId"`
+	MachineID  string      `json:"machineId"`
+	IdentityID string      `json:"identityId,omitempty"`
+	Mode       string      `json:"mode"`
+	ExpiresAt  string      `json:"expiresAt"`
+}
+
+type BrowserSessionOpened struct {
+	Type      MessageType `json:"type"`
+	RequestID string      `json:"requestId"`
+	BrowserID string      `json:"browserId"`
+	GrantID   string      `json:"grantId"`
+	SessionID string      `json:"sessionId"`
+	ChannelID string      `json:"channelId"`
+	URL       string      `json:"url,omitempty"`
+	Title     string      `json:"title,omitempty"`
+	OpenedAt  string      `json:"openedAt"`
+}
+
+type BrowserSessionClose struct {
+	Type      MessageType `json:"type"`
+	BrowserID string      `json:"browserId"`
+	GrantID   string      `json:"grantId"`
+	SessionID string      `json:"sessionId"`
+	ChannelID string      `json:"channelId"`
+	Reason    string      `json:"reason,omitempty"`
+}
+
+type BrowserSessionClosed struct {
+	Type      MessageType `json:"type"`
+	BrowserID string      `json:"browserId"`
+	SessionID string      `json:"sessionId"`
+	ChannelID string      `json:"channelId"`
+	Reason    string      `json:"reason,omitempty"`
+	ClosedAt  string      `json:"closedAt"`
+}
+
+type BrowserSessionError struct {
+	Type      MessageType `json:"type"`
+	BrowserID string      `json:"browserId,omitempty"`
+	RequestID string      `json:"requestId,omitempty"`
+	SessionID string      `json:"sessionId"`
+	ChannelID string      `json:"channelId"`
+	Code      string      `json:"code"`
+	Message   string      `json:"message"`
+}
+
+type BrowserFrame struct {
+	Type        MessageType `json:"type"`
+	BrowserID   string      `json:"browserId"`
+	SessionID   string      `json:"sessionId"`
+	ChannelID   string      `json:"channelId"`
+	Seq         int64       `json:"seq"`
+	ContentType string      `json:"contentType"`
+	DataBase64  string      `json:"dataBase64"`
+	Width       int         `json:"width"`
+	Height      int         `json:"height"`
+	CapturedAt  string      `json:"capturedAt"`
+}
+
+type BrowserCursor struct {
+	Type      MessageType `json:"type"`
+	BrowserID string      `json:"browserId"`
+	SessionID string      `json:"sessionId"`
+	ChannelID string      `json:"channelId"`
+	Owner     string      `json:"owner"`
+	X         float64     `json:"x"`
+	Y         float64     `json:"y"`
+	UpdatedAt string      `json:"updatedAt"`
+}
+
+type BrowserNavigation struct {
+	Type      MessageType `json:"type"`
+	BrowserID string      `json:"browserId"`
+	SessionID string      `json:"sessionId"`
+	ChannelID string      `json:"channelId"`
+	URL       string      `json:"url"`
+	Title     string      `json:"title,omitempty"`
+	StartedAt string      `json:"startedAt,omitempty"`
+	EndedAt   string      `json:"endedAt,omitempty"`
+}
+
+type BrowserAction struct {
+	Type      MessageType     `json:"type"`
+	BrowserID string          `json:"browserId"`
+	SessionID string          `json:"sessionId"`
+	ChannelID string          `json:"channelId"`
+	TaskID    string          `json:"taskId,omitempty"`
+	ToolUseID string          `json:"toolUseId,omitempty"`
+	Summary   string          `json:"summary"`
+	Status    string          `json:"status"`
+	Metadata  json.RawMessage `json:"metadata,omitempty"`
+	At        string          `json:"at"`
+}
+
+type BrowserToolCall struct {
+	Type       MessageType     `json:"type"`
+	BrowserID  string          `json:"browserId"`
+	GrantID    string          `json:"grantId"`
+	TaskID     string          `json:"taskId"`
+	ToolUseID  string          `json:"toolUseId"`
+	Method     string          `json:"method"`
+	ParamsJSON json.RawMessage `json:"paramsJson,omitempty"`
+}
+
+type BrowserToolResult struct {
+	Type       MessageType     `json:"type"`
+	BrowserID  string          `json:"browserId"`
+	GrantID    string          `json:"grantId"`
+	TaskID     string          `json:"taskId"`
+	ToolUseID  string          `json:"toolUseId"`
+	OK         bool            `json:"ok"`
+	ResultJSON json.RawMessage `json:"resultJson,omitempty"`
+	Error      string          `json:"error,omitempty"`
+}
+
+type BrowserControlClaim struct {
+	Type      MessageType `json:"type"`
+	BrowserID string      `json:"browserId"`
+	SessionID string      `json:"sessionId"`
+	ChannelID string      `json:"channelId"`
+	Owner     string      `json:"owner"`
+	Reason    string      `json:"reason,omitempty"`
+}
+
+type BrowserControlRelease struct {
+	Type      MessageType `json:"type"`
+	BrowserID string      `json:"browserId"`
+	SessionID string      `json:"sessionId"`
+	ChannelID string      `json:"channelId"`
+	Owner     string      `json:"owner"`
+	Reason    string      `json:"reason,omitempty"`
+}
+
+type BrowserUserInput struct {
+	Type      MessageType `json:"type"`
+	BrowserID string      `json:"browserId"`
+	SessionID string      `json:"sessionId"`
+	ChannelID string      `json:"channelId"`
+	Owner     string      `json:"owner"`
+	Kind      string      `json:"kind"`
+	X         *float64    `json:"x,omitempty"`
+	Y         *float64    `json:"y,omitempty"`
+	Text      string      `json:"text,omitempty"`
+	Key       string      `json:"key,omitempty"`
+	DeltaX    *float64    `json:"deltaX,omitempty"`
+	DeltaY    *float64    `json:"deltaY,omitempty"`
+}
+
+type BrowserSensitiveActionRequest struct {
+	Type      MessageType `json:"type"`
+	BrowserID string      `json:"browserId"`
+	RequestID string      `json:"requestId"`
+	SessionID string      `json:"sessionId"`
+	ChannelID string      `json:"channelId"`
+	TaskID    string      `json:"taskId"`
+	ToolUseID string      `json:"toolUseId"`
+	Category  string      `json:"category"`
+	Summary   string      `json:"summary"`
+	Origin    string      `json:"origin,omitempty"`
+	ExpiresAt string      `json:"expiresAt"`
+}
+
+type BrowserSensitiveActionResponse struct {
+	Type      MessageType `json:"type"`
+	BrowserID string      `json:"browserId"`
+	RequestID string      `json:"requestId"`
+	SessionID string      `json:"sessionId"`
+	ChannelID string      `json:"channelId"`
+	Approved  bool        `json:"approved"`
+	Reason    string      `json:"reason,omitempty"`
+}
+
 // HelloCapabilities describes optional daemon protocol support.
 type HelloCapabilities struct {
-	Stop                      bool `json:"stop,omitempty"`
-	Terminal                  bool `json:"terminal,omitempty"`
-	ContextRefs               bool `json:"contextRefs,omitempty"`
-	PreviewTunnel             bool `json:"previewTunnel,omitempty"`
-	PreviewMaxFrameBytes      int  `json:"previewMaxFrameBytes,omitempty"`
-	PreviewChunkBytes         int  `json:"previewChunkBytes,omitempty"`
-	PreviewWebSocketProtocols bool `json:"previewWebSocketProtocols,omitempty"`
-	LocalServerDetection      bool `json:"localServerDetection,omitempty"`
-	Skills                    bool `json:"skills,omitempty"`
+	Stop                           bool `json:"stop,omitempty"`
+	Terminal                       bool `json:"terminal,omitempty"`
+	ContextRefs                    bool `json:"contextRefs,omitempty"`
+	PreviewTunnel                  bool `json:"previewTunnel,omitempty"`
+	PreviewMaxFrameBytes           int  `json:"previewMaxFrameBytes,omitempty"`
+	PreviewChunkBytes              int  `json:"previewChunkBytes,omitempty"`
+	PreviewWebSocketProtocols      bool `json:"previewWebSocketProtocols,omitempty"`
+	LocalServerDetection           bool `json:"localServerDetection,omitempty"`
+	Skills                         bool `json:"skills,omitempty"`
+	BrowserSessions                bool `json:"browserSessions,omitempty"`
+	BrowserFrameStream             bool `json:"browserFrameStream,omitempty"`
+	BrowserUserControl             bool `json:"browserUserControl,omitempty"`
+	BrowserIdentities              bool `json:"browserIdentities,omitempty"`
+	BrowserSensitiveActionApproval bool `json:"browserSensitiveActionApproval,omitempty"`
+	BrowserMaxFrameBytes           int  `json:"browserMaxFrameBytes,omitempty"`
 }
 
 // Hello is the first frame sent by the daemon after connecting.

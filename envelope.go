@@ -157,6 +157,38 @@ func payloadForType(msgType string) (any, error) {
 		return &TerminalExit{}, nil
 	case MsgTypeTerminalError:
 		return &TerminalError{}, nil
+	case MsgTypeBrowserSessionOpen:
+		return &BrowserSessionOpen{}, nil
+	case MsgTypeBrowserSessionOpened:
+		return &BrowserSessionOpened{}, nil
+	case MsgTypeBrowserSessionClose:
+		return &BrowserSessionClose{}, nil
+	case MsgTypeBrowserSessionClosed:
+		return &BrowserSessionClosed{}, nil
+	case MsgTypeBrowserSessionError:
+		return &BrowserSessionError{}, nil
+	case MsgTypeBrowserFrame:
+		return &BrowserFrame{}, nil
+	case MsgTypeBrowserCursor:
+		return &BrowserCursor{}, nil
+	case MsgTypeBrowserNavigation:
+		return &BrowserNavigation{}, nil
+	case MsgTypeBrowserAction:
+		return &BrowserAction{}, nil
+	case MsgTypeBrowserToolCall:
+		return &BrowserToolCall{}, nil
+	case MsgTypeBrowserToolResult:
+		return &BrowserToolResult{}, nil
+	case MsgTypeBrowserControlClaim:
+		return &BrowserControlClaim{}, nil
+	case MsgTypeBrowserControlRelease:
+		return &BrowserControlRelease{}, nil
+	case MsgTypeBrowserUserInput:
+		return &BrowserUserInput{}, nil
+	case MsgTypeBrowserSensitiveActionRequest:
+		return &BrowserSensitiveActionRequest{}, nil
+	case MsgTypeBrowserSensitiveActionResponse:
+		return &BrowserSensitiveActionResponse{}, nil
 	default:
 		return nil, fmt.Errorf("unknown message type: %q", msgType)
 	}

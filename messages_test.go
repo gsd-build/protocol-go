@@ -59,6 +59,61 @@ func TestEnvelopeRoundTrip(t *testing.T) {
 			},
 			ActiveTasks: []string{"task-a", "task-b"},
 		}},
+		{"browserSessionOpen", &BrowserSessionOpen{
+			Type:       MsgTypeBrowserSessionOpen,
+			RequestID:  "req_browser_1",
+			GrantID:    "grant_123",
+			SessionID:  "session_123",
+			ProjectID:  "project_123",
+			TaskID:     "task_123",
+			ChannelID:  "channel_123",
+			MachineID:  "machine_123",
+			IdentityID: "identity_123",
+			Mode:       "identity",
+			ExpiresAt:  "2026-04-28T20:00:00Z",
+		}},
+		{"browserFrame", &BrowserFrame{
+			Type:        MsgTypeBrowserFrame,
+			BrowserID:   "browser_123",
+			SessionID:   "session_123",
+			ChannelID:   "channel_123",
+			Seq:         1,
+			ContentType: "image/jpeg",
+			DataBase64:  "aGVsbG8=",
+			Width:       1280,
+			Height:      720,
+			CapturedAt:  "2026-04-28T20:00:01Z",
+		}},
+		{"browserControlClaim", &BrowserControlClaim{
+			Type:      MsgTypeBrowserControlClaim,
+			BrowserID: "browser_123",
+			SessionID: "session_123",
+			ChannelID: "channel_123",
+			Owner:     "lex",
+			Reason:    "pointer",
+		}},
+		{"browserToolCall", &BrowserToolCall{
+			Type:       MsgTypeBrowserToolCall,
+			BrowserID:  "browser_123",
+			GrantID:    "grant_123",
+			TaskID:     "task_123",
+			ToolUseID:  "toolu_123",
+			Method:     "navigate",
+			ParamsJSON: json.RawMessage(`{"url":"https://example.com"}`),
+		}},
+		{"browserSensitiveActionRequest", &BrowserSensitiveActionRequest{
+			Type:      MsgTypeBrowserSensitiveActionRequest,
+			BrowserID: "browser_123",
+			RequestID: "sensitive_123",
+			SessionID: "session_123",
+			ChannelID: "channel_123",
+			TaskID:    "task_123",
+			ToolUseID: "toolu_123",
+			Category:  "external_send",
+			Summary:   "Submit contact form",
+			Origin:    "https://example.com",
+			ExpiresAt: "2026-04-28T20:05:00Z",
+		}},
 		{"welcome", &Welcome{
 			Type:                MsgTypeWelcome,
 			LatestDaemonVersion: "0.2.1",
@@ -415,6 +470,183 @@ func TestEnvelopeRoundTrip(t *testing.T) {
 
 			if !jsonEqual(original, final) {
 				t.Errorf("payload mismatch after round trip: want %v, got %v", original, final)
+			}
+		})
+	}
+}
+
+func TestHelloBrowserCapabilitiesRoundTrip(t *testing.T) {
+	msg := &Hello{
+		Type:      MsgTypeHello,
+		MachineID: "machine_123",
+		Capabilities: &HelloCapabilities{
+			BrowserSessions:                true,
+			BrowserFrameStream:             true,
+			BrowserUserControl:             true,
+			BrowserIdentities:              true,
+			BrowserSensitiveActionApproval: true,
+			BrowserMaxFrameBytes:           262144,
+		},
+	}
+	data, err := json.Marshal(msg)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	env, err := ParseEnvelope(data)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	got := env.Payload.(*Hello)
+	if got.Capabilities == nil || !got.Capabilities.BrowserSessions {
+		t.Fatalf("browser capabilities missing: %#v", got.Capabilities)
+	}
+	if !got.Capabilities.BrowserFrameStream {
+		t.Fatalf("browser frame stream capability missing: %#v", got.Capabilities)
+	}
+	if !got.Capabilities.BrowserUserControl {
+		t.Fatalf("browser user control capability missing: %#v", got.Capabilities)
+	}
+	if !got.Capabilities.BrowserIdentities {
+		t.Fatalf("browser identities capability missing: %#v", got.Capabilities)
+	}
+	if !got.Capabilities.BrowserSensitiveActionApproval {
+		t.Fatalf("browser sensitive action capability missing: %#v", got.Capabilities)
+	}
+	if got.Capabilities.BrowserMaxFrameBytes != 262144 {
+		t.Fatalf("browser max frame bytes = %d", got.Capabilities.BrowserMaxFrameBytes)
+	}
+}
+
+func TestBrowserEnvelopeRejectsInvalidFieldTypes(t *testing.T) {
+	cases := []struct {
+		name string
+		raw  string
+	}{
+		{
+			name: "browserSessionOpen machineId number",
+			raw:  `{"type":"browserSessionOpen","requestId":"req_browser_1","grantId":"grant_123","sessionId":"session_123","projectId":"project_123","taskId":"task_123","channelId":"channel_123","machineId":123,"identityId":"identity_123","mode":"identity","expiresAt":"2026-04-28T20:00:00Z"}`,
+		},
+		{
+			name: "browserFrame seq string",
+			raw:  `{"type":"browserFrame","browserId":"browser_123","sessionId":"session_123","channelId":"channel_123","seq":"1","contentType":"image/jpeg","dataBase64":"aGVsbG8=","width":1280,"height":720,"capturedAt":"2026-04-28T20:00:01Z"}`,
+		},
+		{
+			name: "browserControlClaim owner array",
+			raw:  `{"type":"browserControlClaim","browserId":"browser_123","sessionId":"session_123","channelId":"channel_123","owner":["lex"],"reason":"pointer"}`,
+		},
+		{
+			name: "browserToolCall taskId number",
+			raw:  `{"type":"browserToolCall","browserId":"browser_123","grantId":"grant_123","taskId":123,"toolUseId":"toolu_123","method":"navigate","paramsJson":{"url":"https://example.com"}}`,
+		},
+		{
+			name: "browserSensitiveActionRequest expiresAt object",
+			raw:  `{"type":"browserSensitiveActionRequest","browserId":"browser_123","requestId":"sensitive_123","sessionId":"session_123","channelId":"channel_123","taskId":"task_123","toolUseId":"toolu_123","category":"external_send","summary":"Submit contact form","origin":"https://example.com","expiresAt":{}}`,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if _, err := ParseEnvelope([]byte(tc.raw)); err == nil {
+				t.Fatal("expected parse error")
+			}
+		})
+	}
+}
+
+func TestBrowserEnvelopeIgnoresUnknownFields(t *testing.T) {
+	cases := []struct {
+		name string
+		raw  string
+		want any
+	}{
+		{
+			name: "browserSessionOpen",
+			raw:  `{"type":"browserSessionOpen","requestId":"req_browser_1","grantId":"grant_123","sessionId":"session_123","projectId":"project_123","taskId":"task_123","channelId":"channel_123","machineId":"machine_123","identityId":"identity_123","mode":"identity","expiresAt":"2026-04-28T20:00:00Z","unknown":"ok"}`,
+			want: &BrowserSessionOpen{
+				Type:       MsgTypeBrowserSessionOpen,
+				RequestID:  "req_browser_1",
+				GrantID:    "grant_123",
+				SessionID:  "session_123",
+				ProjectID:  "project_123",
+				TaskID:     "task_123",
+				ChannelID:  "channel_123",
+				MachineID:  "machine_123",
+				IdentityID: "identity_123",
+				Mode:       "identity",
+				ExpiresAt:  "2026-04-28T20:00:00Z",
+			},
+		},
+		{
+			name: "browserFrame",
+			raw:  `{"type":"browserFrame","browserId":"browser_123","sessionId":"session_123","channelId":"channel_123","seq":1,"contentType":"image/jpeg","dataBase64":"aGVsbG8=","width":1280,"height":720,"capturedAt":"2026-04-28T20:00:01Z","unknown":"ok"}`,
+			want: &BrowserFrame{
+				Type:        MsgTypeBrowserFrame,
+				BrowserID:   "browser_123",
+				SessionID:   "session_123",
+				ChannelID:   "channel_123",
+				Seq:         1,
+				ContentType: "image/jpeg",
+				DataBase64:  "aGVsbG8=",
+				Width:       1280,
+				Height:      720,
+				CapturedAt:  "2026-04-28T20:00:01Z",
+			},
+		},
+		{
+			name: "browserControlClaim",
+			raw:  `{"type":"browserControlClaim","browserId":"browser_123","sessionId":"session_123","channelId":"channel_123","owner":"lex","reason":"pointer","unknown":"ok"}`,
+			want: &BrowserControlClaim{
+				Type:      MsgTypeBrowserControlClaim,
+				BrowserID: "browser_123",
+				SessionID: "session_123",
+				ChannelID: "channel_123",
+				Owner:     "lex",
+				Reason:    "pointer",
+			},
+		},
+		{
+			name: "browserToolCall",
+			raw:  `{"type":"browserToolCall","browserId":"browser_123","grantId":"grant_123","taskId":"task_123","toolUseId":"toolu_123","method":"navigate","paramsJson":{"url":"https://example.com"},"unknown":"ok"}`,
+			want: &BrowserToolCall{
+				Type:       MsgTypeBrowserToolCall,
+				BrowserID:  "browser_123",
+				GrantID:    "grant_123",
+				TaskID:     "task_123",
+				ToolUseID:  "toolu_123",
+				Method:     "navigate",
+				ParamsJSON: json.RawMessage(`{"url":"https://example.com"}`),
+			},
+		},
+		{
+			name: "browserSensitiveActionRequest",
+			raw:  `{"type":"browserSensitiveActionRequest","browserId":"browser_123","requestId":"sensitive_123","sessionId":"session_123","channelId":"channel_123","taskId":"task_123","toolUseId":"toolu_123","category":"external_send","summary":"Submit contact form","origin":"https://example.com","expiresAt":"2026-04-28T20:05:00Z","unknown":"ok"}`,
+			want: &BrowserSensitiveActionRequest{
+				Type:      MsgTypeBrowserSensitiveActionRequest,
+				BrowserID: "browser_123",
+				RequestID: "sensitive_123",
+				SessionID: "session_123",
+				ChannelID: "channel_123",
+				TaskID:    "task_123",
+				ToolUseID: "toolu_123",
+				Category:  "external_send",
+				Summary:   "Submit contact form",
+				Origin:    "https://example.com",
+				ExpiresAt: "2026-04-28T20:05:00Z",
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			env, err := ParseEnvelope([]byte(tc.raw))
+			if err != nil {
+				t.Fatalf("parse envelope: %v", err)
+			}
+			if !jsonEqual(mustJSONMap(t, tc.want), mustJSONMap(t, env.Payload)) {
+				t.Fatalf("payload mismatch: want %#v, got %#v", tc.want, env.Payload)
+			}
+			if _, err := json.Marshal(env.Payload); err != nil {
+				t.Fatalf("marshal payload: %v", err)
 			}
 		})
 	}
