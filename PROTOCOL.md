@@ -49,6 +49,7 @@ Dispatch a user message to a session.
 | traceparent | string? | W3C trace context. |
 | imageUrls | string[]? | User-attached image URLs. |
 | contextRefs | ContextRef[]? | Project-relative file and folder references selected in the cloud composer. |
+| customInstructions | string? | Account-level instructions snapshotted onto this task. Updated daemons append this text to the Pi system prompt. |
 
 `ContextRef`:
 

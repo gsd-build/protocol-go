@@ -16,19 +16,20 @@ func TestEnvelopeRoundTrip(t *testing.T) {
 		msg  any
 	}{
 		{"task", &Task{
-			Type:            MsgTypeTask,
-			TaskID:          "11111111-1111-1111-1111-111111111111",
-			SessionID:       "22222222-2222-2222-2222-222222222222",
-			ChannelID:       "ch-1",
-			Prompt:          "hello",
-			Engine:          "pi",
-			Model:           "claude-opus-4-6[1m]",
-			Effort:          "max",
-			PermissionMode:  "acceptEdits",
-			CWD:             "/tmp/project",
-			ClaudeSessionID: "claude-abc-123",
-			RequestID:       "33333333-3333-3333-3333-333333333333",
-			Traceparent:     "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+			Type:               MsgTypeTask,
+			TaskID:             "11111111-1111-1111-1111-111111111111",
+			SessionID:          "22222222-2222-2222-2222-222222222222",
+			ChannelID:          "ch-1",
+			Prompt:             "hello",
+			Engine:             "pi",
+			Model:              "claude-opus-4-6[1m]",
+			Effort:             "max",
+			PermissionMode:     "acceptEdits",
+			CWD:                "/tmp/project",
+			ClaudeSessionID:    "claude-abc-123",
+			RequestID:          "33333333-3333-3333-3333-333333333333",
+			Traceparent:        "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+			CustomInstructions: "Always talk like a pirate.",
 		}},
 		{"stream", &Stream{
 			Type:           MsgTypeStream,
@@ -838,6 +839,30 @@ func TestTaskContextRefsRoundTrip(t *testing.T) {
 	}
 	if out.ContextRefs[0].Path != "apps/web/src/app/page.tsx" {
 		t.Fatalf("unexpected file path %q", out.ContextRefs[0].Path)
+	}
+}
+
+func TestTaskCustomInstructionsRoundTrip(t *testing.T) {
+	in := Task{
+		Type:               MsgTypeTask,
+		TaskID:             "task_123",
+		SessionID:          "session_123",
+		Prompt:             "inspect this",
+		CustomInstructions: "Always talk like a pirate.",
+	}
+
+	raw, err := json.Marshal(in)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var out Task
+	if err := json.Unmarshal(raw, &out); err != nil {
+		t.Fatal(err)
+	}
+
+	if out.CustomInstructions != "Always talk like a pirate." {
+		t.Fatalf("custom instructions = %q", out.CustomInstructions)
 	}
 }
 
