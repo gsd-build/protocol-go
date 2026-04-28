@@ -16,6 +16,19 @@ type Envelope struct {
 // ParseEnvelope reads raw JSON, looks at the type field, and unmarshals
 // into the correct concrete struct.
 func ParseEnvelope(data []byte) (*Envelope, error) {
+	return parseEnvelope(data)
+}
+
+// ParseEnvelopeWithLimits validates frame size, JSON nesting depth, object
+// field counts, and array element counts before parsing the envelope.
+func ParseEnvelopeWithLimits(data []byte, limits EnvelopeLimits) (*Envelope, error) {
+	if err := ValidateEnvelopeFrame(data, limits); err != nil {
+		return nil, err
+	}
+	return parseEnvelope(data)
+}
+
+func parseEnvelope(data []byte) (*Envelope, error) {
 	var raw map[string]json.RawMessage
 	if err := json.Unmarshal(data, &raw); err != nil {
 		return nil, fmt.Errorf("envelope: %w", err)
