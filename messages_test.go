@@ -864,6 +864,24 @@ func TestTaskCustomInstructionsRoundTrip(t *testing.T) {
 	if out.CustomInstructions != "Always talk like a pirate." {
 		t.Fatalf("custom instructions = %q", out.CustomInstructions)
 	}
+
+	for _, raw := range []string{
+		`{"type":"task","taskId":"task_123","sessionId":"session_123","prompt":"inspect this"}`,
+		`{"type":"task","taskId":"task_123","sessionId":"session_123","prompt":"inspect this","customInstructions":""}`,
+	} {
+		var compatible Task
+		if err := json.Unmarshal([]byte(raw), &compatible); err != nil {
+			t.Fatalf("unmarshal compatible payload: %v", err)
+		}
+		if compatible.CustomInstructions != "" {
+			t.Fatalf("compatible custom instructions = %q", compatible.CustomInstructions)
+		}
+	}
+
+	var invalid Task
+	if err := json.Unmarshal([]byte(`{"type":"task","customInstructions":{"text":"pirate"}}`), &invalid); err == nil {
+		t.Fatal("expected non-string customInstructions to fail")
+	}
 }
 
 func TestHelloCapabilitiesContextRefsRoundTrip(t *testing.T) {
