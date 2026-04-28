@@ -154,6 +154,27 @@ func TestEnvelopeRoundTrip(t *testing.T) {
 				},
 			},
 		}},
+		{"listSkills", &ListSkills{
+			Type:      MsgTypeListSkills,
+			RequestID: "skills-1",
+			ChannelID: "chan-1",
+			MachineID: "machine-1",
+			CWD:       "/tmp/project",
+		}},
+		{"listSkillsResult", &ListSkillsResult{
+			Type:      MsgTypeListSkillsResult,
+			RequestID: "skills-1",
+			ChannelID: "chan-1",
+			OK:        true,
+			Skills: []Skill{
+				{
+					Name:        "debug-like-expert",
+					Description: "Deep analysis debugging workflow",
+					Path:        "/Users/me/.claude/skills/debug-like-expert/SKILL.md",
+					Scope:       "home",
+				},
+			},
+		}},
 		{"terminalOpen", &TerminalOpen{
 			Type:      MsgTypeTerminalOpen,
 			RequestID: "open-1",
@@ -826,6 +847,7 @@ func TestHelloCapabilitiesContextRefsRoundTrip(t *testing.T) {
 		Capabilities: &HelloCapabilities{
 			Terminal:    true,
 			ContextRefs: true,
+			Skills:      true,
 		},
 	}
 
@@ -839,8 +861,8 @@ func TestHelloCapabilitiesContextRefsRoundTrip(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if out.Capabilities == nil || !out.Capabilities.ContextRefs {
-		t.Fatal("expected contextRefs capability")
+	if out.Capabilities == nil || !out.Capabilities.ContextRefs || !out.Capabilities.Skills {
+		t.Fatal("expected contextRefs and skills capabilities")
 	}
 }
 
@@ -880,7 +902,7 @@ func TestParseEnvelopeHelloContextRefsCapability(t *testing.T) {
 		"daemonVersion":"0.3.5",
 		"os":"darwin",
 		"arch":"arm64",
-		"capabilities":{"terminal":true,"contextRefs":true,"extra":"ignored"}
+		"capabilities":{"terminal":true,"contextRefs":true,"skills":true,"extra":"ignored"}
 	}`))
 	if err != nil {
 		t.Fatalf("ParseEnvelope: %v", err)
@@ -889,8 +911,57 @@ func TestParseEnvelopeHelloContextRefsCapability(t *testing.T) {
 	if !ok {
 		t.Fatalf("payload type = %T", env.Payload)
 	}
-	if hello.Capabilities == nil || !hello.Capabilities.ContextRefs {
-		t.Fatal("expected contextRefs capability")
+	if hello.Capabilities == nil || !hello.Capabilities.ContextRefs || !hello.Capabilities.Skills {
+		t.Fatal("expected contextRefs and skills capabilities")
+	}
+}
+
+func TestParseEnvelopeListSkills(t *testing.T) {
+	env, err := ParseEnvelope([]byte(`{
+		"type":"listSkills",
+		"requestId":"skills-1",
+		"channelId":"chan-1",
+		"machineId":"machine-1",
+		"cwd":"/tmp/project",
+		"extra":"ignored"
+	}`))
+	if err != nil {
+		t.Fatalf("ParseEnvelope: %v", err)
+	}
+	msg, ok := env.Payload.(*ListSkills)
+	if !ok {
+		t.Fatalf("payload type = %T", env.Payload)
+	}
+	if msg.CWD != "/tmp/project" {
+		t.Fatalf("cwd = %q", msg.CWD)
+	}
+}
+
+func TestParseEnvelopeListSkillsResult(t *testing.T) {
+	env, err := ParseEnvelope([]byte(`{
+		"type":"listSkillsResult",
+		"requestId":"skills-1",
+		"channelId":"chan-1",
+		"ok":true,
+		"skills":[
+			{
+				"name":"debug-like-expert",
+				"description":"Deep analysis debugging workflow",
+				"path":"/Users/me/.claude/skills/debug-like-expert/SKILL.md",
+				"scope":"home",
+				"extra":"ignored"
+			}
+		]
+	}`))
+	if err != nil {
+		t.Fatalf("ParseEnvelope: %v", err)
+	}
+	msg, ok := env.Payload.(*ListSkillsResult)
+	if !ok {
+		t.Fatalf("payload type = %T", env.Payload)
+	}
+	if len(msg.Skills) != 1 || msg.Skills[0].Name != "debug-like-expert" {
+		t.Fatalf("skills = %+v", msg.Skills)
 	}
 }
 
