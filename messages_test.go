@@ -349,6 +349,19 @@ func TestEnvelopeRoundTrip(t *testing.T) {
 			Code:     1000,
 			Reason:   "normal",
 		}},
+		{"localServerDetected", &LocalServerDetected{
+			Type:       MsgTypeLocalServerDetected,
+			SessionID:  "session_123",
+			ChannelID:  "channel_123",
+			TaskID:     "task_123",
+			ToolUseID:  "toolu_123",
+			Host:       "127.0.0.1",
+			Port:       5173,
+			URL:        "http://127.0.0.1:5173/",
+			Command:    "pnpm dev",
+			Source:     "tool_output",
+			DetectedAt: "2026-04-27T20:00:00Z",
+		}},
 	}
 
 	for _, tc := range cases {
@@ -619,6 +632,7 @@ func TestHelloPreviewCapabilitiesRoundTrip(t *testing.T) {
 			PreviewMaxFrameBytes:      1048576,
 			PreviewChunkBytes:         196608,
 			PreviewWebSocketProtocols: true,
+			LocalServerDetection:      true,
 		},
 	}
 	data, err := json.Marshal(msg)
@@ -632,6 +646,9 @@ func TestHelloPreviewCapabilitiesRoundTrip(t *testing.T) {
 	got := env.Payload.(*Hello)
 	if got.Capabilities == nil || !got.Capabilities.PreviewTunnel {
 		t.Fatalf("preview capability missing after round trip: %#v", got.Capabilities)
+	}
+	if !got.Capabilities.LocalServerDetection {
+		t.Fatalf("local server detection capability missing after round trip: %#v", got.Capabilities)
 	}
 }
 

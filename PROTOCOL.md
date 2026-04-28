@@ -358,6 +358,7 @@ Daemon-to-browser lifecycle message for manual and automatic compaction.
 | previewMaxFrameBytes | int? | Maximum encoded preview frame size. |
 | previewChunkBytes | int? | Raw preview body chunk target. |
 | previewWebSocketProtocols | boolean? | Daemon forwards requested WebSocket subprotocols. |
+| localServerDetection | boolean? | Daemon reports verified loopback web servers started by task tools. |
 
 ### `welcome` (relay → daemon, response to hello)
 
@@ -391,6 +392,24 @@ Preview traffic is owner-approved, loopback-only, and routed as explicit protoco
 ### Stream Cancellation
 
 `previewStreamCancel` cancels local IO for the stream. Receivers treat duplicate, missing, or out-of-order chunks as stream errors.
+
+### Local Server Detection
+
+`localServerDetected` is emitted by the daemon when task tool output identifies a reachable loopback HTTP server. The daemon verifies the port before emitting the event. The relay forwards the event to the session channel; browsers can use it to start an owner-scoped preview for the reported port.
+
+| Field | Type | Notes |
+|---|---|---|
+| type | "localServerDetected" | |
+| sessionId | string | Chat session that started the server. |
+| channelId | string | Browser channel for the session. |
+| taskId | string? | Task that produced the server output. |
+| toolUseId | string? | Tool call that produced the server output. |
+| host | string | Normalized loopback host, usually `127.0.0.1`. |
+| port | int | Verified target port. |
+| url | string | Loopback URL for the server. |
+| command | string? | Shell command associated with the tool call. |
+| source | string | Detection source, currently `tool_output`. |
+| detectedAt | string | RFC3339 timestamp. |
 
 ## Terminal Messages
 

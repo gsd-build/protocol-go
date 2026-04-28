@@ -120,6 +120,8 @@ func payloadForType(msgType string) (any, error) {
 		return &PreviewWebSocketData{}, nil
 	case MsgTypePreviewWebSocketClose:
 		return &PreviewWebSocketClose{}, nil
+	case MsgTypeLocalServerDetected:
+		return &LocalServerDetected{}, nil
 	case MsgTypeTerminalOpen:
 		return &TerminalOpen{}, nil
 	case MsgTypeTerminalOpened:
