@@ -128,6 +128,32 @@ func TestEnvelopeRoundTrip(t *testing.T) {
 			RequestID: "33333333-3333-3333-3333-333333333333",
 			Answer:    `["date-fns","custom note"]`,
 		}},
+		{"browseDir paginated", &BrowseDir{
+			Type:      MsgTypeBrowseDir,
+			RequestID: "browse-1",
+			ChannelID: "chan-1",
+			MachineID: "machine-1",
+			Path:      "/tmp/project",
+			Limit:     200,
+			Cursor:    "200",
+		}},
+		{"browseDirResult paginated", &BrowseDirResult{
+			Type:       MsgTypeBrowseDirResult,
+			RequestID:  "browse-1",
+			ChannelID:  "chan-1",
+			OK:         true,
+			HasMore:    true,
+			NextCursor: "400",
+			Entries: []BrowseEntry{
+				{
+					Name:        "src",
+					Path:        "/tmp/project/src",
+					IsDirectory: true,
+					Size:        64,
+					ModifiedAt:  "2026-04-27T18:00:00Z",
+				},
+			},
+		}},
 		{"terminalOpen", &TerminalOpen{
 			Type:      MsgTypeTerminalOpen,
 			RequestID: "open-1",
