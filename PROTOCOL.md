@@ -598,24 +598,245 @@ Shared browser sessions let a browser client and daemon coordinate a task-scoped
 
 ### Capability
 
-`browserSessions`, `browserFrameStream`, `browserUserControl`, `browserIdentities`, `browserSensitiveActionApproval`, and `browserMaxFrameBytes` describe daemon browser support.
+Browser support is advertised in `hello.capabilities`.
+
+| Capability | Type | Meaning |
+|---|---|---|
+| browserSessions | bool | Daemon can open task-scoped shared browser sessions. |
+| browserFrameStream | bool | Daemon can stream screenshot frames with `browserFrame`. |
+| browserUserControl | bool | Daemon can arbitrate Lex and agent browser control. |
+| browserIdentities | bool | Daemon can isolate browser state by identity scope and key. |
+| browserSensitiveActionApproval | bool | Daemon can pause browser tool execution for approval. |
+| browserMaxFrameBytes | int | Maximum encoded browser frame size the daemon can send. |
 
 ### Lifecycle
 
 `browserSessionOpen` starts or attaches to a local browser session for one grant. `browserSessionClose` revokes that session. `browserSessionError` reports stable error codes.
 
+#### `browserSessionOpen`
+
+| Field | Type |
+|---|---|
+| type | "browserSessionOpen" |
+| requestId | string |
+| grantId | string |
+| sessionId | uuid |
+| projectId | uuid |
+| taskId | uuid |
+| channelId | string |
+| machineId | string |
+| identityId | uuid? |
+| mode | string |
+| expiresAt | iso8601 string |
+
+#### `browserSessionOpened`
+
+| Field | Type |
+|---|---|
+| type | "browserSessionOpened" |
+| requestId | string |
+| browserId | string |
+| grantId | string |
+| sessionId | uuid |
+| channelId | string |
+| url | string? |
+| title | string? |
+| openedAt | iso8601 string |
+
+#### `browserSessionClose`
+
+| Field | Type |
+|---|---|
+| type | "browserSessionClose" |
+| browserId | string |
+| grantId | string |
+| sessionId | uuid |
+| channelId | string |
+| reason | string? |
+
+#### `browserSessionClosed`
+
+| Field | Type |
+|---|---|
+| type | "browserSessionClosed" |
+| browserId | string |
+| sessionId | uuid |
+| channelId | string |
+| reason | string? |
+| closedAt | iso8601 string |
+
+#### `browserSessionError`
+
+| Field | Type |
+|---|---|
+| type | "browserSessionError" |
+| browserId | string? |
+| requestId | string? |
+| sessionId | uuid |
+| channelId | string |
+| code | string |
+| message | string |
+
 ### Visual State
 
 `browserFrame` carries bounded screenshot frames. `browserCursor`, `browserNavigation`, and `browserAction` carry compact visible state and action metadata.
+
+#### `browserFrame`
+
+| Field | Type |
+|---|---|
+| type | "browserFrame" |
+| browserId | string |
+| sessionId | uuid |
+| channelId | string |
+| seq | int64 |
+| contentType | string |
+| dataBase64 | base64 string |
+| width | int |
+| height | int |
+| capturedAt | iso8601 string |
+
+#### `browserCursor`
+
+| Field | Type |
+|---|---|
+| type | "browserCursor" |
+| browserId | string |
+| sessionId | uuid |
+| channelId | string |
+| owner | string |
+| x | float64 |
+| y | float64 |
+| updatedAt | iso8601 string |
+
+#### `browserNavigation`
+
+| Field | Type |
+|---|---|
+| type | "browserNavigation" |
+| browserId | string |
+| sessionId | uuid |
+| channelId | string |
+| url | string |
+| title | string? |
+| startedAt | iso8601 string? |
+| endedAt | iso8601 string? |
+
+#### `browserAction`
+
+| Field | Type |
+|---|---|
+| type | "browserAction" |
+| browserId | string |
+| sessionId | uuid |
+| channelId | string |
+| taskId | uuid? |
+| toolUseId | string? |
+| summary | string |
+| status | string |
+| metadata | json? |
+| at | iso8601 string |
 
 ### Control
 
 `browserControlClaim`, `browserControlRelease`, and `browserUserInput` coordinate Lex control. Tool calls execute while control owner is `agent`.
 
+#### `browserControlClaim`
+
+| Field | Type |
+|---|---|
+| type | "browserControlClaim" |
+| browserId | string |
+| sessionId | uuid |
+| channelId | string |
+| owner | string |
+| reason | string? |
+
+#### `browserControlRelease`
+
+| Field | Type |
+|---|---|
+| type | "browserControlRelease" |
+| browserId | string |
+| sessionId | uuid |
+| channelId | string |
+| owner | string |
+| reason | string? |
+
+#### `browserUserInput`
+
+| Field | Type |
+|---|---|
+| type | "browserUserInput" |
+| browserId | string |
+| sessionId | uuid |
+| channelId | string |
+| owner | string |
+| kind | string |
+| x | float64? |
+| y | float64? |
+| text | string? |
+| key | string? |
+| deltaX | float64? |
+| deltaY | float64? |
+
 ### Tool Calls
 
 `browserToolCall` and `browserToolResult` represent agent browser tool execution. The daemon validates active grant state before executing each call.
 
+#### `browserToolCall`
+
+| Field | Type |
+|---|---|
+| type | "browserToolCall" |
+| browserId | string |
+| grantId | string |
+| taskId | uuid |
+| toolUseId | string |
+| method | string |
+| paramsJson | json? |
+
+#### `browserToolResult`
+
+| Field | Type |
+|---|---|
+| type | "browserToolResult" |
+| browserId | string |
+| grantId | string |
+| taskId | uuid |
+| toolUseId | string |
+| ok | bool |
+| resultJson | json? |
+| error | string? |
+
 ### Sensitive Actions
 
 `browserSensitiveActionRequest` pauses execution and asks Lex for approval. `browserSensitiveActionResponse` resumes or denies the action.
+
+#### `browserSensitiveActionRequest`
+
+| Field | Type |
+|---|---|
+| type | "browserSensitiveActionRequest" |
+| browserId | string |
+| requestId | string |
+| sessionId | uuid |
+| channelId | string |
+| taskId | uuid |
+| toolUseId | string |
+| category | string |
+| summary | string |
+| origin | string? |
+| expiresAt | iso8601 string |
+
+#### `browserSensitiveActionResponse`
+
+| Field | Type |
+|---|---|
+| type | "browserSensitiveActionResponse" |
+| browserId | string |
+| requestId | string |
+| sessionId | uuid |
+| channelId | string |
+| approved | bool |
+| reason | string? |
