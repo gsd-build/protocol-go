@@ -766,6 +766,84 @@ func TestHelloCapabilitiesContextRefsRoundTrip(t *testing.T) {
 	}
 }
 
+func TestParseEnvelopeTaskContextRefs(t *testing.T) {
+	raw := []byte(`{
+		"type":"task",
+		"taskId":"task_123",
+		"sessionId":"session_123",
+		"channelId":"channel_123",
+		"prompt":"inspect this",
+		"contextRefs":[
+			{"kind":"file","path":"README.md","name":"README.md","size":42,"modifiedAt":"2026-04-28T12:00:00Z","extra":"ignored"},
+			{"kind":"folder","path":"apps/web/src/components","name":"components"}
+		]
+	}`)
+
+	env, err := ParseEnvelope(raw)
+	if err != nil {
+		t.Fatalf("ParseEnvelope: %v", err)
+	}
+	task, ok := env.Payload.(*Task)
+	if !ok {
+		t.Fatalf("payload type = %T", env.Payload)
+	}
+	if len(task.ContextRefs) != 2 {
+		t.Fatalf("expected 2 context refs, got %d", len(task.ContextRefs))
+	}
+	if task.ContextRefs[0].Size == nil || *task.ContextRefs[0].Size != 42 {
+		t.Fatalf("unexpected size: %+v", task.ContextRefs[0].Size)
+	}
+}
+
+func TestParseEnvelopeHelloContextRefsCapability(t *testing.T) {
+	env, err := ParseEnvelope([]byte(`{
+		"type":"hello",
+		"machineId":"machine_123",
+		"daemonVersion":"0.3.5",
+		"os":"darwin",
+		"arch":"arm64",
+		"capabilities":{"terminal":true,"contextRefs":true,"extra":"ignored"}
+	}`))
+	if err != nil {
+		t.Fatalf("ParseEnvelope: %v", err)
+	}
+	hello, ok := env.Payload.(*Hello)
+	if !ok {
+		t.Fatalf("payload type = %T", env.Payload)
+	}
+	if hello.Capabilities == nil || !hello.Capabilities.ContextRefs {
+		t.Fatal("expected contextRefs capability")
+	}
+}
+
+func TestParseEnvelopeRejectsInvalidContextRefTypes(t *testing.T) {
+	cases := []struct {
+		name string
+		raw  string
+	}{
+		{
+			name: "context refs string",
+			raw:  `{"type":"task","contextRefs":"README.md"}`,
+		},
+		{
+			name: "context ref size string",
+			raw:  `{"type":"task","contextRefs":[{"kind":"file","path":"README.md","name":"README.md","size":"42"}]}`,
+		},
+		{
+			name: "context refs capability string",
+			raw:  `{"type":"hello","capabilities":{"contextRefs":"true"}}`,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if _, err := ParseEnvelope([]byte(tc.raw)); err == nil {
+				t.Fatal("expected ParseEnvelope error")
+			}
+		})
+	}
+}
+
 func TestTraceID(t *testing.T) {
 	cases := []struct {
 		traceparent string
