@@ -79,7 +79,7 @@ type Task struct {
 	SessionID       string       `json:"sessionId"`
 	ChannelID       string       `json:"channelId"`
 	Prompt          string       `json:"prompt"`
-	Engine          string       `json:"engine,omitempty"` // "claude" or "pi"; empty defaults to claude
+	Engine          string       `json:"engine,omitempty"` // "pi"; empty defaults to pi
 	Model           string       `json:"model"`
 	Effort          string       `json:"effort"`
 	PermissionMode  string       `json:"permissionMode"`

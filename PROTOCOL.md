@@ -30,7 +30,7 @@ bindings expose `ExtractBinding`, `ValidateRequestBinding`, and
 ### `task`
 Dispatch a user message to a session.
 
-`engine` selects the daemon task executor. Daemons that do not support this field ignore it through normal JSON decoding.
+`engine` selects the daemon task executor. Current daemons run tasks through the Pi executor.
 
 | Field | Type | Notes |
 |---|---|---|
@@ -39,7 +39,7 @@ Dispatch a user message to a session.
 | sessionId | uuid | |
 | channelId | string | Routes stream events back to the correct browser tab |
 | prompt | string | |
-| engine | "claude" \| "pi"? | Optional task execution engine. Empty means `"claude"`. |
+| engine | "pi"? | Optional task execution engine. Empty means `"pi"`. |
 | model | string | e.g. `claude-opus-4-6[1m]` |
 | effort | "low" \| "medium" \| "high" \| "max" | |
 | permissionMode | string | e.g. `acceptEdits` |
