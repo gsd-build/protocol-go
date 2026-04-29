@@ -56,8 +56,9 @@ func TestEnvelopeRoundTrip(t *testing.T) {
 			OS:            "darwin",
 			Arch:          "arm64",
 			Capabilities: &HelloCapabilities{
-				Stop:     true,
-				Terminal: true,
+				Stop:              true,
+				Terminal:          true,
+				AgentTerminalJobs: true,
 			},
 			ActiveTasks: []string{"task-a", "task-b"},
 		}},
@@ -303,6 +304,46 @@ func TestEnvelopeRoundTrip(t *testing.T) {
 			ChannelID:  "chan-1",
 			Error:      "Unable to start shell",
 		}},
+		{"agentTerminalStarted", &AgentTerminalStarted{
+			Type:           MsgTypeAgentTerminalStarted,
+			JobID:          "job-1",
+			TerminalID:     "term-1",
+			SessionID:      "session-1",
+			ChannelID:      "channel-1",
+			TaskID:         "task-1",
+			ToolCallID:     "tool-1",
+			ProjectID:      "project-1",
+			CommandPreview: "pnpm dev",
+			Title:          "pnpm dev",
+			CWD:            "/tmp/project",
+			Status:         "running",
+			Readiness:      AgentTerminalReadiness{State: "waiting", TimeoutMs: 30000},
+			Ports:          []AgentTerminalPort{{Host: "127.0.0.1", Port: 3000, URL: "http://127.0.0.1:3000/"}},
+			URLs:           []string{"http://127.0.0.1:3000/"},
+			Seq:            7,
+			StartedAt:      "2026-04-29T12:00:00Z",
+		}},
+		{"agentTerminalUpdated", &AgentTerminalUpdated{
+			Type:       MsgTypeAgentTerminalUpdated,
+			JobID:      "job-1",
+			TerminalID: "term-1",
+			SessionID:  "session-1",
+			ChannelID:  "channel-1",
+			Status:     "ready",
+			Readiness:  AgentTerminalReadiness{State: "ready", Source: "port", ReadyAt: "2026-04-29T12:00:05Z"},
+			Seq:        8,
+			UpdatedAt:  "2026-04-29T12:00:05Z",
+		}},
+		{"agentTerminalAttach", &AgentTerminalAttach{
+			Type:       MsgTypeAgentTerminalAttach,
+			TerminalID: "term-1",
+			ChannelID:  "channel-1",
+		}},
+		{"agentTerminalSnapshotRequest", &AgentTerminalSnapshotRequest{
+			Type:       MsgTypeAgentTerminalSnapshotRequest,
+			TerminalID: "term-1",
+			ChannelID:  "channel-1",
+		}},
 		{"compact request", &CompactRequest{
 			Type:         MsgTypeCompactRequest,
 			SessionID:    "session_123",
@@ -472,6 +513,38 @@ func TestEnvelopeRoundTrip(t *testing.T) {
 
 			if !jsonEqual(original, final) {
 				t.Errorf("payload mismatch after round trip: want %v, got %v", original, final)
+			}
+		})
+	}
+}
+
+func TestAgentTerminalEnvelopeRejectsInvalidFieldTypes(t *testing.T) {
+	cases := []struct {
+		name string
+		raw  string
+	}{
+		{
+			name: "started jobId number",
+			raw:  `{"type":"agentTerminalStarted","jobId":123,"terminalId":"term-1","sessionId":"session-1","channelId":"channel-1","projectId":"project-1","commandPreview":"pnpm dev","title":"pnpm dev","cwd":"/tmp/project","status":"running","readiness":{"state":"waiting"},"startedAt":"2026-04-29T12:00:00Z"}`,
+		},
+		{
+			name: "started terminalId object",
+			raw:  `{"type":"agentTerminalStarted","jobId":"job-1","terminalId":{},"sessionId":"session-1","channelId":"channel-1","projectId":"project-1","commandPreview":"pnpm dev","title":"pnpm dev","cwd":"/tmp/project","status":"running","readiness":{"state":"waiting"},"startedAt":"2026-04-29T12:00:00Z"}`,
+		},
+		{
+			name: "started port string",
+			raw:  `{"type":"agentTerminalStarted","jobId":"job-1","terminalId":"term-1","sessionId":"session-1","channelId":"channel-1","projectId":"project-1","commandPreview":"pnpm dev","title":"pnpm dev","cwd":"/tmp/project","status":"running","readiness":{"state":"waiting"},"ports":[{"host":"127.0.0.1","port":"3000","url":"http://127.0.0.1:3000/"}],"startedAt":"2026-04-29T12:00:00Z"}`,
+		},
+		{
+			name: "updated readiness array",
+			raw:  `{"type":"agentTerminalUpdated","jobId":"job-1","terminalId":"term-1","sessionId":"session-1","channelId":"channel-1","status":"ready","readiness":[],"updatedAt":"2026-04-29T12:00:05Z"}`,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if _, err := ParseEnvelope([]byte(tc.raw)); err == nil {
+				t.Fatal("expected parse error")
 			}
 		})
 	}

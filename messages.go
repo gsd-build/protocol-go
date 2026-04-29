@@ -65,6 +65,11 @@ const (
 	MsgTypeTerminalExit     = "terminalExit"
 	MsgTypeTerminalError    = "terminalError"
 
+	MsgTypeAgentTerminalStarted         = "agentTerminalStarted"
+	MsgTypeAgentTerminalUpdated         = "agentTerminalUpdated"
+	MsgTypeAgentTerminalAttach          = "agentTerminalAttach"
+	MsgTypeAgentTerminalSnapshotRequest = "agentTerminalSnapshotRequest"
+
 	MsgTypeBrowserSessionOpen             MessageType = "browserSessionOpen"
 	MsgTypeBrowserSessionOpened           MessageType = "browserSessionOpened"
 	MsgTypeBrowserSessionClose            MessageType = "browserSessionClose"
@@ -499,6 +504,66 @@ type TerminalError struct {
 	Error      string `json:"error"`
 }
 
+type AgentTerminalReadiness struct {
+	State       string `json:"state"`
+	Source      string `json:"source,omitempty"`
+	MatchedText string `json:"matchedText,omitempty"`
+	ReadyAt     string `json:"readyAt,omitempty"`
+	TimeoutMs   int    `json:"timeoutMs,omitempty"`
+}
+
+type AgentTerminalPort struct {
+	Host string `json:"host"`
+	Port int    `json:"port"`
+	URL  string `json:"url"`
+}
+
+type AgentTerminalStarted struct {
+	Type           string                 `json:"type"`
+	JobID          string                 `json:"jobId"`
+	TerminalID     string                 `json:"terminalId"`
+	SessionID      string                 `json:"sessionId"`
+	ChannelID      string                 `json:"channelId"`
+	TaskID         string                 `json:"taskId,omitempty"`
+	ToolCallID     string                 `json:"toolCallId,omitempty"`
+	ProjectID      string                 `json:"projectId"`
+	CommandPreview string                 `json:"commandPreview"`
+	Title          string                 `json:"title"`
+	CWD            string                 `json:"cwd"`
+	Status         string                 `json:"status"`
+	Readiness      AgentTerminalReadiness `json:"readiness"`
+	Ports          []AgentTerminalPort    `json:"ports,omitempty"`
+	URLs           []string               `json:"urls,omitempty"`
+	Seq            int64                  `json:"seq,omitempty"`
+	StartedAt      string                 `json:"startedAt"`
+}
+
+type AgentTerminalUpdated struct {
+	Type       string                 `json:"type"`
+	JobID      string                 `json:"jobId"`
+	TerminalID string                 `json:"terminalId"`
+	SessionID  string                 `json:"sessionId"`
+	ChannelID  string                 `json:"channelId"`
+	Status     string                 `json:"status"`
+	Readiness  AgentTerminalReadiness `json:"readiness"`
+	Ports      []AgentTerminalPort    `json:"ports,omitempty"`
+	URLs       []string               `json:"urls,omitempty"`
+	Seq        int64                  `json:"seq,omitempty"`
+	UpdatedAt  string                 `json:"updatedAt"`
+}
+
+type AgentTerminalAttach struct {
+	Type       string `json:"type"`
+	TerminalID string `json:"terminalId"`
+	ChannelID  string `json:"channelId"`
+}
+
+type AgentTerminalSnapshotRequest struct {
+	Type       string `json:"type"`
+	TerminalID string `json:"terminalId"`
+	ChannelID  string `json:"channelId"`
+}
+
 type BrowserSessionOpen struct {
 	Type       MessageType `json:"type"`
 	RequestID  string      `json:"requestId"`
@@ -683,6 +748,7 @@ type BrowserSensitiveActionResponse struct {
 type HelloCapabilities struct {
 	Stop                           bool `json:"stop,omitempty"`
 	Terminal                       bool `json:"terminal,omitempty"`
+	AgentTerminalJobs              bool `json:"agentTerminalJobs,omitempty"`
 	ContextRefs                    bool `json:"contextRefs,omitempty"`
 	PreviewTunnel                  bool `json:"previewTunnel,omitempty"`
 	PreviewMaxFrameBytes           int  `json:"previewMaxFrameBytes,omitempty"`

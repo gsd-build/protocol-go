@@ -440,6 +440,7 @@ Daemon-to-browser lifecycle message for manual and automatic compaction.
 |---|---|---|
 | stop | boolean? | Daemon accepts stop messages for active task cancellation. |
 | terminal | boolean? | Daemon accepts terminal lifecycle and PTY control messages. |
+| agentTerminalJobs | boolean? | Daemon accepts daemon-owned agent terminal job lifecycle and control messages. |
 | contextRefs | boolean? | Daemon resolves task context references before task execution. |
 | previewTunnel | boolean? | Daemon accepts remote localhost preview messages. |
 | previewMaxFrameBytes | int? | Maximum encoded preview frame size. |
@@ -608,6 +609,86 @@ Daemons advertise terminal support through `hello.capabilities.terminal`.
 | sessionId | uuid? |
 | channelId | string |
 | error | string |
+
+## Agent Terminal Jobs
+
+Agent terminal jobs are daemon-owned PTY processes started by agent tools and surfaced to browsers as attachable terminal streams. Daemons advertise support through `hello.capabilities.agentTerminalJobs`.
+
+The daemon creates an agent terminal route by sending `agentTerminalStarted`. The relay validates the session, paired machine, owning user, and channel before registering the route and forwarding the event to the browser. The daemon sends `agentTerminalUpdated` whenever job metadata advances.
+
+Browser attach uses `agentTerminalAttach`; browser snapshot refresh uses `agentTerminalSnapshotRequest`. Agent terminal log bytes use the existing terminal data plane: `terminalOutput`, `terminalSnapshot`, `terminalExit`, and `terminalError`.
+
+### `agentTerminalStarted`
+
+| Field | Type | Notes |
+|---|---|---|
+| type | "agentTerminalStarted" | |
+| jobId | string | Daemon job id. |
+| terminalId | string | Terminal stream id for the job PTY. |
+| sessionId | uuid | Chat session scope. |
+| channelId | string | Browser channel for the session. |
+| taskId | string? | Agent task that started the job. |
+| toolCallId | string? | Tool call that started the job. |
+| projectId | uuid | Project scope. |
+| commandPreview | string | Redacted command summary for UI metadata. |
+| title | string | Human-readable terminal title. |
+| cwd | string | Normalized daemon working directory. |
+| status | string | `starting`, `running`, `ready`, `exited`, `failed`, or `killed`. |
+| readiness | AgentTerminalReadiness | Readiness state. |
+| ports | AgentTerminalPort[]? | Detected loopback ports. |
+| urls | string[]? | Detected loopback URLs. |
+| seq | int64? | Current output sequence. |
+| startedAt | iso8601 string | Job start timestamp. |
+
+### `agentTerminalUpdated`
+
+| Field | Type | Notes |
+|---|---|---|
+| type | "agentTerminalUpdated" | |
+| jobId | string | Daemon job id. |
+| terminalId | string | Terminal stream id for the job PTY. |
+| sessionId | uuid | Chat session scope. |
+| channelId | string | Browser channel for the session. |
+| status | string | Current lifecycle status. |
+| readiness | AgentTerminalReadiness | Current readiness state. |
+| ports | AgentTerminalPort[]? | Detected loopback ports. |
+| urls | string[]? | Detected loopback URLs. |
+| seq | int64? | Current output sequence. |
+| updatedAt | iso8601 string | Update timestamp. |
+
+### `AgentTerminalReadiness`
+
+| Field | Type | Notes |
+|---|---|---|
+| state | string | `unknown`, `waiting`, `ready`, `timed_out`, or `failed`. |
+| source | string? | `pattern`, `port`, `url`, `process_exit`, or `heuristic`. |
+| matchedText | string? | Output text that satisfied readiness. |
+| readyAt | iso8601 string? | Readiness timestamp. |
+| timeoutMs | int? | Readiness wait timeout. |
+
+### `AgentTerminalPort`
+
+| Field | Type |
+|---|---|
+| host | string |
+| port | int |
+| url | string |
+
+### `agentTerminalAttach`
+
+| Field | Type |
+|---|---|
+| type | "agentTerminalAttach" |
+| terminalId | string |
+| channelId | string |
+
+### `agentTerminalSnapshotRequest`
+
+| Field | Type |
+|---|---|
+| type | "agentTerminalSnapshotRequest" |
+| terminalId | string |
+| channelId | string |
 
 ## Shared Browser Sessions
 
