@@ -1299,6 +1299,106 @@ func TestTaskCustomInstructionsRoundTrip(t *testing.T) {
 	}
 }
 
+func TestTaskProviderRoundTrip(t *testing.T) {
+	in := Task{
+		Type:           MsgTypeTask,
+		TaskID:         "task_123",
+		SessionID:      "session_123",
+		ChannelID:      "channel_123",
+		Prompt:         "inspect this",
+		Engine:         "pi",
+		Provider:       "codex-appserver",
+		Model:          "gpt-5.5",
+		Effort:         "max",
+		PermissionMode: "acceptEdits",
+		CWD:            "/tmp/project",
+	}
+
+	raw, err := json.Marshal(in)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var out Task
+	if err := json.Unmarshal(raw, &out); err != nil {
+		t.Fatal(err)
+	}
+
+	if out.Provider != "codex-appserver" {
+		t.Fatalf("provider = %q, want codex-appserver", out.Provider)
+	}
+	if out.Model != "gpt-5.5" {
+		t.Fatalf("model = %q, want gpt-5.5", out.Model)
+	}
+}
+
+func TestTaskProviderOmittedWhenEmpty(t *testing.T) {
+	task := &Task{
+		Type:           MsgTypeTask,
+		TaskID:         "task_123",
+		SessionID:      "session_123",
+		ChannelID:      "channel_123",
+		Prompt:         "hello",
+		Engine:         "pi",
+		Model:          "claude-opus-4-6",
+		Effort:         "max",
+		PermissionMode: "acceptEdits",
+		CWD:            "/tmp/project",
+	}
+
+	raw, err := json.Marshal(task)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+
+	var decoded map[string]any
+	if err := json.Unmarshal(raw, &decoded); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if _, ok := decoded["provider"]; ok {
+		t.Fatalf("provider should be omitted when empty: %s", raw)
+	}
+}
+
+func TestTaskProviderParseEnvelope(t *testing.T) {
+	cases := []struct {
+		name         string
+		raw          string
+		wantProvider string
+	}{
+		{
+			name:         "provider present",
+			raw:          `{"type":"task","taskId":"task_123","sessionId":"session_123","channelId":"channel_123","prompt":"inspect this","engine":"pi","provider":"codex-appserver","model":"gpt-5.5","effort":"max","permissionMode":"acceptEdits","cwd":"/tmp/project"}`,
+			wantProvider: "codex-appserver",
+		},
+		{
+			name:         "provider omitted",
+			raw:          `{"type":"task","taskId":"task_123","sessionId":"session_123","channelId":"channel_123","prompt":"hello","engine":"pi","model":"claude-opus-4-6","effort":"max","permissionMode":"acceptEdits","cwd":"/tmp/project"}`,
+			wantProvider: "",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			env, err := ParseEnvelope([]byte(tc.raw))
+			if err != nil {
+				t.Fatalf("ParseEnvelope: %v", err)
+			}
+			task, ok := env.Payload.(*Task)
+			if !ok {
+				t.Fatalf("payload type = %T", env.Payload)
+			}
+			if task.Provider != tc.wantProvider {
+				t.Fatalf("provider = %q, want %q", task.Provider, tc.wantProvider)
+			}
+		})
+	}
+
+	if _, err := ParseEnvelope([]byte(`{"type":"task","provider":123}`)); err == nil {
+		t.Fatal("expected non-string provider to fail")
+	}
+}
+
 func TestTaskPlanCapabilityRoundTrip(t *testing.T) {
 	in := Task{
 		Type:      MsgTypeTask,

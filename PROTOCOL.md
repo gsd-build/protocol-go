@@ -40,7 +40,8 @@ Dispatch a user message to a session.
 | channelId | string | Routes stream events back to the correct browser tab |
 | prompt | string | |
 | engine | "pi"? | Optional task execution engine. Empty means `"pi"`. |
-| model | string | e.g. `claude-opus-4-6[1m]` |
+| provider | string? | Optional Pi provider id. Empty means `"claude-cli"`. |
+| model | string | Provider-specific model id, e.g. `claude-opus-4-6`, `gpt-5.5`, or `gpt-5.4` |
 | effort | "low" \| "medium" \| "high" \| "max" | |
 | permissionMode | string | e.g. `acceptEdits` |
 | cwd | string | Absolute path on the daemon's machine |
@@ -75,7 +76,13 @@ Dispatch a user message to a session.
 ```json
 {
   "type": "task",
-  "prompt": "Use these files",
+  "taskId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "sessionId": "2c963f66-5717-4562-b3fc-3fa85f64afa6",
+  "channelId": "ch_123",
+  "prompt": "Inspect the project",
+  "engine": "pi",
+  "provider": "codex-appserver",
+  "model": "gpt-5.5",
   "contextRefs": [
     { "kind": "file", "path": "apps/web/src/app/page.tsx", "name": "page.tsx" },
     { "kind": "folder", "path": "apps/web/src/components", "name": "components" }
