@@ -1299,6 +1299,54 @@ func TestTaskCustomInstructionsRoundTrip(t *testing.T) {
 	}
 }
 
+func TestTaskPlanCapabilityRoundTrip(t *testing.T) {
+	in := Task{
+		Type:      MsgTypeTask,
+		TaskID:    "task_123",
+		SessionID: "session_123",
+		Prompt:    "continue the plan",
+		PlanCapability: &PlanCapability{
+			Token:      "gsd_plan_abc123",
+			APIBaseURL: "https://app.gsd.build",
+			ExpiresAt:  "2026-04-28T22:30:00Z",
+		},
+	}
+
+	raw, err := json.Marshal(in)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var out Task
+	if err := json.Unmarshal(raw, &out); err != nil {
+		t.Fatal(err)
+	}
+	if out.PlanCapability == nil {
+		t.Fatal("planCapability missing")
+	}
+	if out.PlanCapability.Token != "gsd_plan_abc123" {
+		t.Fatalf("token = %q", out.PlanCapability.Token)
+	}
+	if out.PlanCapability.APIBaseURL != "https://app.gsd.build" {
+		t.Fatalf("apiBaseUrl = %q", out.PlanCapability.APIBaseURL)
+	}
+	if out.PlanCapability.ExpiresAt != "2026-04-28T22:30:00Z" {
+		t.Fatalf("expiresAt = %q", out.PlanCapability.ExpiresAt)
+	}
+
+	env, err := ParseEnvelope([]byte(`{"type":"task","taskId":"task_123","sessionId":"session_123","channelId":"channel_123","prompt":"continue"}`))
+	if err != nil {
+		t.Fatalf("ParseEnvelope compatible payload: %v", err)
+	}
+	compatible, ok := env.Payload.(*Task)
+	if !ok {
+		t.Fatalf("compatible payload type = %T", env.Payload)
+	}
+	if compatible.PlanCapability != nil {
+		t.Fatalf("compatible plan capability = %#v", compatible.PlanCapability)
+	}
+}
+
 func TestHelloCapabilitiesContextRefsRoundTrip(t *testing.T) {
 	in := Hello{
 		Type: MsgTypeHello,

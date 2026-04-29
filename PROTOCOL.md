@@ -50,6 +50,7 @@ Dispatch a user message to a session.
 | imageUrls | string[]? | User-attached image URLs. |
 | contextRefs | ContextRef[]? | Project-relative file and folder references selected in the cloud composer. |
 | customInstructions | string? | Account-level instructions snapshotted onto this task. Updated daemons append this text to the Pi system prompt. |
+| planCapability | PlanCapability? | Task-scoped bearer capability for Plan Mode tools. The daemon passes it to the Pi process as environment variables and never places it in the prompt. |
 
 `ContextRef`:
 
@@ -60,6 +61,14 @@ Dispatch a user message to a session.
 | name | string | Display name for the referenced path. |
 | size | int? | File size in bytes when known. |
 | modifiedAt | string? | ISO timestamp when known. |
+
+`PlanCapability`:
+
+| Field | Type | Notes |
+|---|---|---|
+| token | string | Bearer token scoped to one task. |
+| apiBaseUrl | string | Cloud app base URL for `/api/agent-plan/*`. |
+| expiresAt | string | ISO timestamp. |
 
 `Task.contextRefs` carries project-relative file and folder references selected in the cloud composer. The relay forwards this field only to daemons that advertise `Hello.capabilities.contextRefs`.
 
