@@ -51,6 +51,7 @@ Dispatch a user message to a session.
 | imageUrls | string[]? | User-attached image URLs. |
 | contextRefs | ContextRef[]? | Project-relative file and folder references selected in the cloud composer. |
 | customInstructions | string? | Account-level instructions snapshotted onto this task. Updated daemons append this text to the Pi system prompt. |
+| disableSkills | boolean? | `true` disables Claude skill discovery and explicit skill file loading for the task. |
 | planCapability | PlanCapability? | Task-scoped bearer capability for Plan Mode tools. The daemon passes it to the Pi process as environment variables and never places it in the prompt. |
 
 `ContextRef`:

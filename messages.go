@@ -116,6 +116,7 @@ type Task struct {
 	ImageURLs          []string        `json:"imageUrls,omitempty"`   // user-attached image URLs
 	ContextRefs        []ContextRef    `json:"contextRefs,omitempty"`
 	CustomInstructions string          `json:"customInstructions,omitempty"`
+	DisableSkills      bool            `json:"disableSkills,omitempty"`
 	PlanCapability     *PlanCapability `json:"planCapability,omitempty"`
 }
 

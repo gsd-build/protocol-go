@@ -1,6 +1,7 @@
 package protocol
 
 import (
+	"bytes"
 	"encoding/json"
 	"testing"
 	"time"
@@ -30,6 +31,7 @@ func TestEnvelopeRoundTrip(t *testing.T) {
 			RequestID:          "33333333-3333-3333-3333-333333333333",
 			Traceparent:        "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
 			CustomInstructions: "Always talk like a pirate.",
+			DisableSkills:      true,
 		}},
 		{"stream", &Stream{
 			Type:           MsgTypeStream,
@@ -1113,6 +1115,49 @@ func TestTaskCustomInstructionsRoundTrip(t *testing.T) {
 	var invalid Task
 	if err := json.Unmarshal([]byte(`{"type":"task","customInstructions":{"text":"pirate"}}`), &invalid); err == nil {
 		t.Fatal("expected non-string customInstructions to fail")
+	}
+}
+
+func TestTaskDisableSkillsRoundTrip(t *testing.T) {
+	in := Task{
+		Type:          MsgTypeTask,
+		TaskID:        "task_123",
+		SessionID:     "session_123",
+		Prompt:        "inspect this",
+		DisableSkills: true,
+	}
+
+	raw, err := json.Marshal(in)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var out Task
+	if err := json.Unmarshal(raw, &out); err != nil {
+		t.Fatal(err)
+	}
+	if !out.DisableSkills {
+		t.Fatal("disableSkills should round-trip")
+	}
+
+	var compatible Task
+	if err := json.Unmarshal([]byte(`{"type":"task","taskId":"task_123","sessionId":"session_123","prompt":"inspect this"}`), &compatible); err != nil {
+		t.Fatalf("unmarshal compatible payload: %v", err)
+	}
+	if compatible.DisableSkills {
+		t.Fatal("disableSkills should default to false")
+	}
+	compatibleRaw, err := json.Marshal(compatible)
+	if err != nil {
+		t.Fatalf("marshal compatible payload: %v", err)
+	}
+	if bytes.Contains(compatibleRaw, []byte("disableSkills")) {
+		t.Fatal("disableSkills should be omitted when false")
+	}
+
+	var invalid Task
+	if err := json.Unmarshal([]byte(`{"type":"task","disableSkills":"yes"}`), &invalid); err == nil {
+		t.Fatal("expected non-boolean disableSkills to fail")
 	}
 }
 
