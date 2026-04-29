@@ -54,9 +54,8 @@ func TestEnvelopeRoundTrip(t *testing.T) {
 			OS:            "darwin",
 			Arch:          "arm64",
 			Capabilities: &HelloCapabilities{
-				Stop:          true,
-				Terminal:      true,
-				SessionTitles: true,
+				Stop:     true,
+				Terminal: true,
 			},
 			ActiveTasks: []string{"task-a", "task-b"},
 		}},
@@ -315,25 +314,6 @@ func TestEnvelopeRoundTrip(t *testing.T) {
 			ChannelID: "channel_123",
 			RequestID: "stats_123",
 		}},
-		{"session title request", &SessionTitleRequest{
-			Type:         MsgTypeSessionTitleRequest,
-			SessionID:    "session_123",
-			ChannelID:    "channel_123",
-			RequestID:    "title_123",
-			FirstMessage: "Can we add AI-generated chat titles?",
-			ExpectedName: "Can We Add",
-			Model:        "claude-sonnet-4-6",
-		}},
-		{"session title result", &SessionTitleResult{
-			Type:         MsgTypeSessionTitleResult,
-			SessionID:    "session_123",
-			ChannelID:    "channel_123",
-			RequestID:    "title_123",
-			OK:           true,
-			Title:        "AI Chat Titles",
-			ExpectedName: "Can We Add",
-			Source:       "pi",
-		}},
 		{"context stats", &ContextStats{
 			Type:                 MsgTypeContextStats,
 			SessionID:            "session_123",
@@ -537,59 +517,6 @@ func TestHelloBrowserCapabilitiesRoundTrip(t *testing.T) {
 	}
 }
 
-func TestHelloSessionTitleCapabilityCompatibility(t *testing.T) {
-	t.Run("rejects invalid sessionTitles type", func(t *testing.T) {
-		raw := `{"type":"hello","machineId":"machine_123","daemonVersion":"0.2.0","os":"darwin","arch":"arm64","capabilities":{"sessionTitles":"true"}}`
-		if _, err := ParseEnvelope([]byte(raw)); err == nil {
-			t.Fatal("expected parse error")
-		}
-	})
-
-	t.Run("accepts omitted sessionTitles", func(t *testing.T) {
-		raw := `{"type":"hello","machineId":"machine_123","daemonVersion":"0.2.0","os":"darwin","arch":"arm64","capabilities":{"terminal":true}}`
-		env, err := ParseEnvelope([]byte(raw))
-		if err != nil {
-			t.Fatalf("ParseEnvelope: %v", err)
-		}
-		msg, ok := env.Payload.(*Hello)
-		if !ok {
-			t.Fatalf("payload type = %T", env.Payload)
-		}
-		if msg.Capabilities == nil || msg.Capabilities.SessionTitles {
-			t.Fatalf("sessionTitles = %#v, want false", msg.Capabilities)
-		}
-		encoded, err := json.Marshal(env.Payload)
-		if err != nil {
-			t.Fatalf("marshal: %v", err)
-		}
-		if _, err := ParseEnvelope(encoded); err != nil {
-			t.Fatalf("ParseEnvelope marshaled payload: %v", err)
-		}
-	})
-
-	t.Run("ignores unknown capability siblings", func(t *testing.T) {
-		raw := `{"type":"hello","machineId":"machine_123","daemonVersion":"0.2.0","os":"darwin","arch":"arm64","capabilities":{"sessionTitles":true,"futureFlag":true}}`
-		env, err := ParseEnvelope([]byte(raw))
-		if err != nil {
-			t.Fatalf("ParseEnvelope: %v", err)
-		}
-		msg, ok := env.Payload.(*Hello)
-		if !ok {
-			t.Fatalf("payload type = %T", env.Payload)
-		}
-		if msg.Capabilities == nil || !msg.Capabilities.SessionTitles {
-			t.Fatalf("sessionTitles missing: %#v", msg.Capabilities)
-		}
-		encoded, err := json.Marshal(env.Payload)
-		if err != nil {
-			t.Fatalf("marshal: %v", err)
-		}
-		if _, err := ParseEnvelope(encoded); err != nil {
-			t.Fatalf("ParseEnvelope marshaled payload: %v", err)
-		}
-	})
-}
-
 func TestBrowserEnvelopeRejectsInvalidFieldTypes(t *testing.T) {
 	cases := []struct {
 		name string
@@ -614,38 +541,6 @@ func TestBrowserEnvelopeRejectsInvalidFieldTypes(t *testing.T) {
 		{
 			name: "browserSensitiveActionRequest expiresAt object",
 			raw:  `{"type":"browserSensitiveActionRequest","browserId":"browser_123","requestId":"sensitive_123","sessionId":"session_123","channelId":"channel_123","taskId":"task_123","toolUseId":"toolu_123","category":"external_send","summary":"Submit contact form","origin":"https://example.com","expiresAt":{}}`,
-		},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			if _, err := ParseEnvelope([]byte(tc.raw)); err == nil {
-				t.Fatal("expected parse error")
-			}
-		})
-	}
-}
-
-func TestSessionTitleEnvelopeRejectsInvalidFieldTypes(t *testing.T) {
-	cases := []struct {
-		name string
-		raw  string
-	}{
-		{
-			name: "sessionTitleRequest firstMessage number",
-			raw:  `{"type":"sessionTitleRequest","sessionId":"session_123","channelId":"channel_123","requestId":"title_123","firstMessage":123}`,
-		},
-		{
-			name: "sessionTitleRequest expectedName object",
-			raw:  `{"type":"sessionTitleRequest","sessionId":"session_123","channelId":"channel_123","requestId":"title_123","firstMessage":"hi","expectedName":{}}`,
-		},
-		{
-			name: "sessionTitleResult ok string",
-			raw:  `{"type":"sessionTitleResult","sessionId":"session_123","channelId":"channel_123","requestId":"title_123","ok":"true","source":"pi"}`,
-		},
-		{
-			name: "sessionTitleResult title object",
-			raw:  `{"type":"sessionTitleResult","sessionId":"session_123","channelId":"channel_123","requestId":"title_123","ok":true,"title":{},"source":"pi"}`,
 		},
 	}
 
@@ -752,84 +647,6 @@ func TestBrowserEnvelopeIgnoresUnknownFields(t *testing.T) {
 			}
 			if _, err := json.Marshal(env.Payload); err != nil {
 				t.Fatalf("marshal payload: %v", err)
-			}
-		})
-	}
-}
-
-func TestSessionTitleEnvelopeCompatibilityAndUnknownFields(t *testing.T) {
-	cases := []struct {
-		name       string
-		raw        string
-		assertions func(t *testing.T, payload any)
-	}{
-		{
-			name: "request ignores unknown fields and leaves omitted optionals empty",
-			raw:  `{"type":"sessionTitleRequest","sessionId":"session_123","channelId":"channel_123","requestId":"title_123","firstMessage":"hi","extra":"ignored"}`,
-			assertions: func(t *testing.T, payload any) {
-				msg, ok := payload.(*SessionTitleRequest)
-				if !ok {
-					t.Fatalf("payload type = %T", payload)
-				}
-				if msg.ExpectedName != "" || msg.Model != "" {
-					t.Fatalf("optional fields = expectedName:%q model:%q, want empty", msg.ExpectedName, msg.Model)
-				}
-			},
-		},
-		{
-			name: "request preserves optional fields",
-			raw:  `{"type":"sessionTitleRequest","sessionId":"session_123","channelId":"channel_123","requestId":"title_123","firstMessage":"hi","expectedName":"Hi","model":"claude-sonnet-4-6","extra":"ignored"}`,
-			assertions: func(t *testing.T, payload any) {
-				msg, ok := payload.(*SessionTitleRequest)
-				if !ok {
-					t.Fatalf("payload type = %T", payload)
-				}
-				if msg.ExpectedName != "Hi" || msg.Model != "claude-sonnet-4-6" {
-					t.Fatalf("optional fields = expectedName:%q model:%q", msg.ExpectedName, msg.Model)
-				}
-			},
-		},
-		{
-			name: "result ignores unknown fields and leaves omitted optionals empty",
-			raw:  `{"type":"sessionTitleResult","sessionId":"session_123","channelId":"channel_123","requestId":"title_123","ok":false,"source":"pi","extra":"ignored"}`,
-			assertions: func(t *testing.T, payload any) {
-				msg, ok := payload.(*SessionTitleResult)
-				if !ok {
-					t.Fatalf("payload type = %T", payload)
-				}
-				if msg.Title != "" || msg.ExpectedName != "" || msg.Error != "" {
-					t.Fatalf("optional fields = title:%q expectedName:%q error:%q, want empty", msg.Title, msg.ExpectedName, msg.Error)
-				}
-			},
-		},
-		{
-			name: "result preserves optional fields",
-			raw:  `{"type":"sessionTitleResult","sessionId":"session_123","channelId":"channel_123","requestId":"title_123","ok":true,"title":"AI Chat Titles","expectedName":"AI Chat","source":"pi","extra":"ignored"}`,
-			assertions: func(t *testing.T, payload any) {
-				msg, ok := payload.(*SessionTitleResult)
-				if !ok {
-					t.Fatalf("payload type = %T", payload)
-				}
-				if msg.Title != "AI Chat Titles" || msg.ExpectedName != "AI Chat" {
-					t.Fatalf("optional fields = title:%q expectedName:%q", msg.Title, msg.ExpectedName)
-				}
-			},
-		},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			env, err := ParseEnvelope([]byte(tc.raw))
-			if err != nil {
-				t.Fatalf("ParseEnvelope: %v", err)
-			}
-			tc.assertions(t, env.Payload)
-			encoded, err := json.Marshal(env.Payload)
-			if err != nil {
-				t.Fatalf("marshal: %v", err)
-			}
-			if _, err := ParseEnvelope(encoded); err != nil {
-				t.Fatalf("ParseEnvelope marshaled payload: %v", err)
 			}
 		})
 	}

@@ -150,32 +150,6 @@ Browser-to-daemon control message. The daemon executes Pi RPC `get_session_stats
 }
 ```
 
-### `sessionTitleRequest`
-
-Browser-to-daemon metadata message requesting a short title from the first user message. Send this only after `hello.capabilities.sessionTitles` is advertised. The request runs outside the chat task transcript.
-
-```json
-{
-  "type": "sessionTitleRequest",
-  "sessionId": "session_123",
-  "channelId": "channel_123",
-  "requestId": "title_123",
-  "firstMessage": "Can we add AI-generated chat titles?",
-  "expectedName": "Can We Add",
-  "model": "claude-sonnet-4-6"
-}
-```
-
-| Field | Type | Notes |
-|---|---|---|
-| type | "sessionTitleRequest" | |
-| sessionId | uuid | |
-| channelId | string | Routes the result back to the browser tab |
-| requestId | uuid | Correlates the result with the request |
-| firstMessage | string | First user message used as title input |
-| expectedName | string? | Current deterministic session name used for guarded persistence |
-| model | string? | Optional model preference for the metadata call |
-
 ### `browseDir`
 
 | Field | Type |
@@ -375,35 +349,6 @@ Daemon-to-browser lifecycle message for manual and automatic compaction.
 `status` is one of `started`, `completed`, or `failed`.
 `reason` is one of `manual`, `threshold`, or `overflow`.
 
-### `sessionTitleResult`
-
-Daemon-to-browser metadata result for `sessionTitleRequest`.
-
-```json
-{
-  "type": "sessionTitleResult",
-  "sessionId": "session_123",
-  "channelId": "channel_123",
-  "requestId": "title_123",
-  "ok": true,
-  "title": "AI Chat Titles",
-  "expectedName": "Can We Add",
-  "source": "pi"
-}
-```
-
-| Field | Type | Notes |
-|---|---|---|
-| type | "sessionTitleResult" | |
-| sessionId | uuid | |
-| channelId | string | |
-| requestId | uuid | |
-| ok | boolean | |
-| title | string? | Present when `ok` is true and the daemon produced a title |
-| expectedName | string? | Echoed from the request for guarded persistence |
-| error | string? | Present when `ok` is false |
-| source | string | `"pi"` |
-
 ### `heartbeat`
 
 | Field | Type |
@@ -501,7 +446,6 @@ Daemon-to-browser metadata result for `sessionTitleRequest`.
 | previewWebSocketProtocols | boolean? | Daemon forwards requested WebSocket subprotocols. |
 | localServerDetection | boolean? | Daemon reports verified loopback web servers started by task tools. |
 | skills | boolean? | Daemon accepts `listSkills` and can pass explicit Claude skill files into Pi. |
-| sessionTitles | boolean? | Daemon accepts `sessionTitleRequest` and emits `sessionTitleResult`. |
 
 ### `welcome` (relay → daemon, response to hello)
 

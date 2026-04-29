@@ -24,21 +24,19 @@ const (
 	MsgTypeListSkillsResult                = "listSkillsResult"
 	MsgTypeCompactRequest      MessageType = "compactRequest"
 	MsgTypeContextStatsRequest MessageType = "contextStatsRequest"
-	MsgTypeSessionTitleRequest MessageType = "sessionTitleRequest"
 
-	MsgTypeStream                         = "stream"
-	MsgTypeTaskStarted                    = "taskStarted"
-	MsgTypeTaskComplete                   = "taskComplete"
-	MsgTypeTaskError                      = "taskError"
-	MsgTypeTaskCancelled                  = "taskCancelled"
-	MsgTypePermissionRequest              = "permissionRequest"
-	MsgTypeQuestion                       = "question"
-	MsgTypeHeartbeat                      = "heartbeat"
-	MsgTypeBrowseDirResult                = "browseDirResult"
-	MsgTypeReadFileResult                 = "readFileResult"
-	MsgTypeContextStats       MessageType = "contextStats"
-	MsgTypeCompactStatus      MessageType = "compactStatus"
-	MsgTypeSessionTitleResult MessageType = "sessionTitleResult"
+	MsgTypeStream                        = "stream"
+	MsgTypeTaskStarted                   = "taskStarted"
+	MsgTypeTaskComplete                  = "taskComplete"
+	MsgTypeTaskError                     = "taskError"
+	MsgTypeTaskCancelled                 = "taskCancelled"
+	MsgTypePermissionRequest             = "permissionRequest"
+	MsgTypeQuestion                      = "question"
+	MsgTypeHeartbeat                     = "heartbeat"
+	MsgTypeBrowseDirResult               = "browseDirResult"
+	MsgTypeReadFileResult                = "readFileResult"
+	MsgTypeContextStats      MessageType = "contextStats"
+	MsgTypeCompactStatus     MessageType = "compactStatus"
 
 	MsgTypeHello   = "hello"
 	MsgTypeWelcome = "welcome"
@@ -198,16 +196,6 @@ type ContextStatsRequest struct {
 	RequestID string      `json:"requestId"`
 }
 
-type SessionTitleRequest struct {
-	Type         MessageType `json:"type"`
-	SessionID    string      `json:"sessionId"`
-	ChannelID    string      `json:"channelId"`
-	RequestID    string      `json:"requestId"`
-	FirstMessage string      `json:"firstMessage"`
-	ExpectedName string      `json:"expectedName,omitempty"`
-	Model        string      `json:"model,omitempty"`
-}
-
 // Stream carries a single Claude event plus a sequence number.
 type Stream struct {
 	Type           string          `json:"type"`
@@ -329,18 +317,6 @@ type CompactStatus struct {
 	Error                string                 `json:"error,omitempty"`
 	Source               string                 `json:"source"`
 	ObservedAt           time.Time              `json:"observedAt"`
-}
-
-type SessionTitleResult struct {
-	Type         MessageType `json:"type"`
-	SessionID    string      `json:"sessionId"`
-	ChannelID    string      `json:"channelId"`
-	RequestID    string      `json:"requestId"`
-	OK           bool        `json:"ok"`
-	Title        string      `json:"title,omitempty"`
-	ExpectedName string      `json:"expectedName,omitempty"`
-	Error        string      `json:"error,omitempty"`
-	Source       string      `json:"source"`
 }
 
 // Heartbeat is the daemon's 30s health pulse.
@@ -719,7 +695,6 @@ type HelloCapabilities struct {
 	BrowserIdentities              bool `json:"browserIdentities,omitempty"`
 	BrowserSensitiveActionApproval bool `json:"browserSensitiveActionApproval,omitempty"`
 	BrowserMaxFrameBytes           int  `json:"browserMaxFrameBytes,omitempty"`
-	SessionTitles                  bool `json:"sessionTitles,omitempty"`
 }
 
 // Hello is the first frame sent by the daemon after connecting.
