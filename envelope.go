@@ -85,8 +85,6 @@ func payloadForType(msgType string) (any, error) {
 		return &CompactRequest{}, nil
 	case MsgTypeContextStatsRequest:
 		return &ContextStatsRequest{}, nil
-	case MsgTypeSessionTitleRequest:
-		return &SessionTitleRequest{}, nil
 	case MsgTypeStream:
 		return &Stream{}, nil
 	case MsgTypeTaskStarted:
@@ -111,8 +109,6 @@ func payloadForType(msgType string) (any, error) {
 		return &ContextStats{}, nil
 	case MsgTypeCompactStatus:
 		return &CompactStatus{}, nil
-	case MsgTypeSessionTitleResult:
-		return &SessionTitleResult{}, nil
 	case MsgTypeHello:
 		return &Hello{}, nil
 	case MsgTypeWelcome:
