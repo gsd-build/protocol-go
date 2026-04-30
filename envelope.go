@@ -157,6 +157,14 @@ func payloadForType(msgType string) (any, error) {
 		return &TerminalExit{}, nil
 	case MsgTypeTerminalError:
 		return &TerminalError{}, nil
+	case MsgTypeAgentTerminalStarted:
+		return &AgentTerminalStarted{}, nil
+	case MsgTypeAgentTerminalUpdated:
+		return &AgentTerminalUpdated{}, nil
+	case MsgTypeAgentTerminalAttach:
+		return &AgentTerminalAttach{}, nil
+	case MsgTypeAgentTerminalSnapshotRequest:
+		return &AgentTerminalSnapshotRequest{}, nil
 	case MsgTypeBrowserSessionOpen:
 		return &BrowserSessionOpen{}, nil
 	case MsgTypeBrowserSessionOpened:
