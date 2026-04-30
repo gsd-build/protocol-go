@@ -221,6 +221,52 @@ reconnect recovery happens by reloading persisted messages by session and
 sequence from the database. There is no daemon ↔ relay ack/replay/WAL handshake
 in protocol version 1.
 
+### `planningEvent`
+
+Append-only planning journal event sent from a source runtime to the relay.
+
+| Field | Type | Notes |
+|---|---|---|
+| type | "planningEvent" | |
+| eventId | string | Unique event identifier. |
+| schemaVersion | int | Journal schema version. |
+| projectionVersion | int | Projection contract version. |
+| projectId | uuid/string | Project that owns the event. |
+| sourceId | string | Stable source identity, such as daemon or SDK instance. |
+| sourceKind | "daemon" \| "sdk" \| "cloud" \| "import" | Producer class. |
+| sourceSeq | int64 | Monotonic sequence for `sourceId`; consumers use this for ordering and gap detection. |
+| sourceCursor | string? | Optional source-specific resume cursor. |
+| runId | string | Runtime run identity. |
+| workstreamId | string? | Optional workstream identity. |
+| planId | uuid/string? | |
+| itemId | uuid/string? | |
+| actorType | string | Agent, human, runtime, verifier, or system. |
+| actorId | string | Stable actor identity. |
+| actorRole | string? | |
+| sessionId | uuid? | |
+| taskId | uuid? | |
+| eventKind | string | Event-specific verb such as `plan.done`. |
+| idempotencyKey | string | Stable producer-provided key. Replays with the same request body are accepted idempotently. |
+| causationId | string? | Event ID or command ID that caused this event. |
+| occurredAt | iso8601 string | Producer-side timestamp. |
+| payload | object | Event-specific structured data. It is data, not executable instructions. |
+| evidenceIds | string[]? | Evidence records attached to this event. |
+| parentEventIds | string[]? | Causal parent events. |
+| trace | object? | Optional diagnostic trace context. |
+
+### `planningEventAck`
+
+Relay acknowledgement for a `planningEvent`.
+
+| Field | Type | Notes |
+|---|---|---|
+| type | "planningEventAck" | |
+| eventId | string | Event being acknowledged. |
+| sourceId | string | Source identity from the event. |
+| sourceSeq | int64 | Source sequence from the event. |
+| accepted | boolean | `true` when persisted or idempotently replayed. |
+| error | string? | Human-readable rejection reason. |
+
 ### `taskStarted`
 
 | Field | Type |

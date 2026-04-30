@@ -197,6 +197,10 @@ func payloadForType(msgType string) (any, error) {
 		return &BrowserSensitiveActionRequest{}, nil
 	case MsgTypeBrowserSensitiveActionResponse:
 		return &BrowserSensitiveActionResponse{}, nil
+	case MsgTypePlanningEvent:
+		return &PlanningEvent{}, nil
+	case MsgTypePlanningEventAck:
+		return &PlanningEventAck{}, nil
 	default:
 		return nil, fmt.Errorf("unknown message type: %q", msgType)
 	}
