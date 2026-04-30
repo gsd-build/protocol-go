@@ -13,6 +13,7 @@ type MessageType = string
 // Message type constants.
 const (
 	MsgTypeTask                            = "task"
+	MsgTypeTaskLifecycle                   = "taskLifecycle"
 	MsgTypeStop                            = "stop"
 	MsgTypePermissionResponse              = "permissionResponse"
 	MsgTypeQuestionResponse                = "questionResponse"
@@ -128,9 +129,12 @@ type ContextRef struct {
 }
 
 type PlanCapability struct {
-	Token      string `json:"token"`
-	APIBaseURL string `json:"apiBaseUrl"`
-	ExpiresAt  string `json:"expiresAt"`
+	ID         string          `json:"id,omitempty"`
+	AttemptID  string          `json:"attemptId,omitempty"`
+	Token      string          `json:"token"`
+	APIBaseURL string          `json:"apiBaseUrl"`
+	ExpiresAt  string          `json:"expiresAt"`
+	Snapshot   json.RawMessage `json:"snapshot,omitempty"`
 }
 
 type PlanningEvent struct {
@@ -171,12 +175,86 @@ type PlanningEventAck struct {
 	Error     string      `json:"error,omitempty"`
 }
 
+type TurnKind string
+
+const (
+	TurnKindUser         TurnKind = "user"
+	TurnKindSessionTitle TurnKind = "session_title"
+	TurnKindContextStats TurnKind = "context_stats"
+	TurnKindCompact      TurnKind = "compact"
+	TurnKindControl      TurnKind = "control"
+)
+
+type TaskDeadlines struct {
+	ProcessStartMs      int `json:"processStartMs,omitempty"`
+	PromptWriteMs       int `json:"promptWriteMs,omitempty"`
+	FirstEventMs        int `json:"firstEventMs,omitempty"`
+	FirstVisibleEventMs int `json:"firstVisibleEventMs,omitempty"`
+	StreamIdleMs        int `json:"streamIdleMs,omitempty"`
+	ToolIdleMs          int `json:"toolIdleMs,omitempty"`
+	UserInputMs         int `json:"userInputMs,omitempty"`
+	CleanupTermMs       int `json:"cleanupTermMs,omitempty"`
+}
+
+type TaskLifecyclePhase string
+
+const (
+	TaskLifecyclePhaseAccepted              TaskLifecyclePhase = "accepted"
+	TaskLifecyclePhaseQueued                TaskLifecyclePhase = "queued"
+	TaskLifecyclePhaseStarted               TaskLifecyclePhase = "started"
+	TaskLifecyclePhasePiStarted             TaskLifecyclePhase = "pi_started"
+	TaskLifecyclePhasePromptWritten         TaskLifecyclePhase = "prompt_written"
+	TaskLifecyclePhaseFirstEventSeen        TaskLifecyclePhase = "first_event_seen"
+	TaskLifecyclePhaseFirstVisibleEventSeen TaskLifecyclePhase = "first_visible_event_seen"
+	TaskLifecyclePhaseStreaming             TaskLifecyclePhase = "streaming"
+	TaskLifecyclePhaseToolStarted           TaskLifecyclePhase = "tool_started"
+	TaskLifecyclePhaseToolFinished          TaskLifecyclePhase = "tool_finished"
+	TaskLifecyclePhaseWaitingInput          TaskLifecyclePhase = "waiting_input"
+	TaskLifecyclePhaseInputReceived         TaskLifecyclePhase = "input_received"
+	TaskLifecyclePhaseCleanupStarted        TaskLifecyclePhase = "cleanup_started"
+	TaskLifecyclePhaseCleanupFinished       TaskLifecyclePhase = "cleanup_finished"
+	TaskLifecyclePhaseHeartbeat             TaskLifecyclePhase = "heartbeat"
+	TaskLifecyclePhaseRetryScheduled        TaskLifecyclePhase = "retry_scheduled"
+	TaskLifecyclePhaseCompleted             TaskLifecyclePhase = "completed"
+	TaskLifecyclePhaseFailed                TaskLifecyclePhase = "failed"
+	TaskLifecyclePhaseCanceled              TaskLifecyclePhase = "canceled"
+	TaskLifecyclePhaseTimedOut              TaskLifecyclePhase = "timed_out"
+	TaskLifecyclePhaseLost                  TaskLifecyclePhase = "lost"
+)
+
+type TaskAttemptStatus string
+
+const (
+	TaskAttemptStatusCreated               TaskAttemptStatus = "created"
+	TaskAttemptStatusQueued                TaskAttemptStatus = "queued"
+	TaskAttemptStatusStarted               TaskAttemptStatus = "started"
+	TaskAttemptStatusPiStarted             TaskAttemptStatus = "pi_started"
+	TaskAttemptStatusPromptWritten         TaskAttemptStatus = "prompt_written"
+	TaskAttemptStatusFirstEventSeen        TaskAttemptStatus = "first_event_seen"
+	TaskAttemptStatusFirstVisibleEventSeen TaskAttemptStatus = "first_visible_event_seen"
+	TaskAttemptStatusStreaming             TaskAttemptStatus = "streaming"
+	TaskAttemptStatusWaitingInput          TaskAttemptStatus = "waiting_input"
+	TaskAttemptStatusToolRunning           TaskAttemptStatus = "tool_running"
+	TaskAttemptStatusCleanupStarted        TaskAttemptStatus = "cleanup_started"
+	TaskAttemptStatusCleanupFinished       TaskAttemptStatus = "cleanup_finished"
+	TaskAttemptStatusCompleted             TaskAttemptStatus = "completed"
+	TaskAttemptStatusFailed                TaskAttemptStatus = "failed"
+	TaskAttemptStatusCanceled              TaskAttemptStatus = "canceled"
+	TaskAttemptStatusTimedOut              TaskAttemptStatus = "timed_out"
+	TaskAttemptStatusLost                  TaskAttemptStatus = "lost"
+)
+
 // Task is sent from the browser to the daemon to dispatch a user message.
 type Task struct {
 	Type               string          `json:"type"`
 	TaskID             string          `json:"taskId"`
 	SessionID          string          `json:"sessionId"`
 	ChannelID          string          `json:"channelId"`
+	AttemptID          string          `json:"attemptId,omitempty"`
+	AttemptNumber      int             `json:"attemptNumber,omitempty"`
+	LeaseExpiresAt     string          `json:"leaseExpiresAt,omitempty"`
+	DeadlineProfile    TaskDeadlines   `json:"deadlineProfile,omitempty"`
+	TurnKind           TurnKind        `json:"turnKind,omitempty"`
 	Prompt             string          `json:"prompt"`
 	Engine             string          `json:"engine,omitempty"`   // "pi"; empty defaults to pi
 	Provider           string          `json:"provider,omitempty"` // Pi provider; empty defaults to claude-cli
@@ -192,6 +270,28 @@ type Task struct {
 	CustomInstructions string          `json:"customInstructions,omitempty"`
 	DisableSkills      bool            `json:"disableSkills,omitempty"`
 	PlanCapability     *PlanCapability `json:"planCapability,omitempty"`
+}
+
+type TaskLifecycle struct {
+	Type          MessageType        `json:"type"`
+	TaskID        string             `json:"taskId"`
+	AttemptID     string             `json:"attemptId"`
+	AttemptNumber int                `json:"attemptNumber"`
+	SessionID     string             `json:"sessionId"`
+	ChannelID     string             `json:"channelId"`
+	Phase         TaskLifecyclePhase `json:"phase"`
+	Status        TaskAttemptStatus  `json:"status"`
+	Retryable     bool               `json:"retryable,omitempty"`
+	FailureCode   string             `json:"failureCode,omitempty"`
+	Message       string             `json:"message,omitempty"`
+	UserMessage   string             `json:"userMessage,omitempty"`
+	ObservedAt    time.Time          `json:"observedAt"`
+	DeadlineAt    *time.Time         `json:"deadlineAt,omitempty"`
+	PID           int                `json:"pid,omitempty"`
+	Provider      string             `json:"provider,omitempty"`
+	Model         string             `json:"model,omitempty"`
+	RequestID     string             `json:"requestId,omitempty"`
+	Traceparent   string             `json:"traceparent,omitempty"`
 }
 
 // Stop asks the daemon to interrupt the current Claude process for a session.
@@ -274,6 +374,9 @@ type ContextStatsRequest struct {
 // Stream carries a single Claude event plus a sequence number.
 type Stream struct {
 	Type           string          `json:"type"`
+	TaskID         string          `json:"taskId,omitempty"`
+	AttemptID      string          `json:"attemptId,omitempty"`
+	AttemptNumber  int             `json:"attemptNumber,omitempty"`
 	SessionID      string          `json:"sessionId"`
 	ChannelID      string          `json:"channelId"`
 	SequenceNumber int64           `json:"sequenceNumber"`
@@ -284,19 +387,23 @@ type Stream struct {
 
 // TaskStarted signals the daemon began processing a task.
 type TaskStarted struct {
-	Type        string `json:"type"`
-	TaskID      string `json:"taskId"`
-	SessionID   string `json:"sessionId"`
-	ChannelID   string `json:"channelId"`
-	StartedAt   string `json:"startedAt"`
-	RequestID   string `json:"requestId,omitempty"`
-	Traceparent string `json:"traceparent,omitempty"` // W3C trace context
+	Type          string `json:"type"`
+	TaskID        string `json:"taskId"`
+	AttemptID     string `json:"attemptId,omitempty"`
+	AttemptNumber int    `json:"attemptNumber,omitempty"`
+	SessionID     string `json:"sessionId"`
+	ChannelID     string `json:"channelId"`
+	StartedAt     string `json:"startedAt"`
+	RequestID     string `json:"requestId,omitempty"`
+	Traceparent   string `json:"traceparent,omitempty"` // W3C trace context
 }
 
 // TaskComplete reports final result metadata.
 type TaskComplete struct {
 	Type            string `json:"type"`
 	TaskID          string `json:"taskId"`
+	AttemptID       string `json:"attemptId,omitempty"`
+	AttemptNumber   int    `json:"attemptNumber,omitempty"`
 	SessionID       string `json:"sessionId"`
 	ChannelID       string `json:"channelId"`
 	ClaudeSessionID string `json:"claudeSessionId"`
@@ -310,33 +417,46 @@ type TaskComplete struct {
 
 // TaskError reports a failure.
 type TaskError struct {
-	Type        string `json:"type"`
-	TaskID      string `json:"taskId"`
-	SessionID   string `json:"sessionId"`
-	ChannelID   string `json:"channelId"`
-	Error       string `json:"error"`
-	RequestID   string `json:"requestId,omitempty"`
-	Traceparent string `json:"traceparent,omitempty"` // W3C trace context
+	Type          string `json:"type"`
+	TaskID        string `json:"taskId"`
+	AttemptID     string `json:"attemptId,omitempty"`
+	AttemptNumber int    `json:"attemptNumber,omitempty"`
+	SessionID     string `json:"sessionId"`
+	ChannelID     string `json:"channelId"`
+	Error         string `json:"error"`
+	FailureCode   string `json:"failureCode,omitempty"`
+	Retryable     bool   `json:"retryable,omitempty"`
+	UserMessage   string `json:"userMessage,omitempty"`
+	RequestID     string `json:"requestId,omitempty"`
+	Traceparent   string `json:"traceparent,omitempty"` // W3C trace context
 }
 
 // TaskCancelled tells the relay/browser that a task was interrupted by the user.
 type TaskCancelled struct {
-	Type        string `json:"type"`
-	TaskID      string `json:"taskId"`
-	SessionID   string `json:"sessionId"`
-	ChannelID   string `json:"channelId"`
-	RequestID   string `json:"requestId,omitempty"`
-	Traceparent string `json:"traceparent,omitempty"` // W3C trace context
+	Type          string `json:"type"`
+	TaskID        string `json:"taskId"`
+	AttemptID     string `json:"attemptId,omitempty"`
+	AttemptNumber int    `json:"attemptNumber,omitempty"`
+	SessionID     string `json:"sessionId"`
+	ChannelID     string `json:"channelId"`
+	FailureCode   string `json:"failureCode,omitempty"`
+	Retryable     bool   `json:"retryable,omitempty"`
+	UserMessage   string `json:"userMessage,omitempty"`
+	RequestID     string `json:"requestId,omitempty"`
+	Traceparent   string `json:"traceparent,omitempty"` // W3C trace context
 }
 
 // PermissionRequest is Claude asking for tool approval.
 type PermissionRequest struct {
-	Type      string          `json:"type"`
-	SessionID string          `json:"sessionId"`
-	ChannelID string          `json:"channelId"`
-	RequestID string          `json:"requestId"`
-	ToolName  string          `json:"toolName"`
-	ToolInput json.RawMessage `json:"toolInput"`
+	Type          string          `json:"type"`
+	TaskID        string          `json:"taskId,omitempty"`
+	AttemptID     string          `json:"attemptId,omitempty"`
+	AttemptNumber int             `json:"attemptNumber,omitempty"`
+	SessionID     string          `json:"sessionId"`
+	ChannelID     string          `json:"channelId"`
+	RequestID     string          `json:"requestId"`
+	ToolName      string          `json:"toolName"`
+	ToolInput     json.RawMessage `json:"toolInput"`
 }
 
 // QuestionOption is a structured answer choice for AskUserQuestion.
@@ -348,14 +468,17 @@ type QuestionOption struct {
 
 // Question is Claude asking the user for input.
 type Question struct {
-	Type        string           `json:"type"`
-	SessionID   string           `json:"sessionId"`
-	ChannelID   string           `json:"channelId"`
-	RequestID   string           `json:"requestId"`
-	Question    string           `json:"question"`
-	Header      string           `json:"header,omitempty"`
-	MultiSelect bool             `json:"multiSelect,omitempty"`
-	Options     []QuestionOption `json:"options,omitempty"`
+	Type          string           `json:"type"`
+	TaskID        string           `json:"taskId,omitempty"`
+	AttemptID     string           `json:"attemptId,omitempty"`
+	AttemptNumber int              `json:"attemptNumber,omitempty"`
+	SessionID     string           `json:"sessionId"`
+	ChannelID     string           `json:"channelId"`
+	RequestID     string           `json:"requestId"`
+	Question      string           `json:"question"`
+	Header        string           `json:"header,omitempty"`
+	MultiSelect   bool             `json:"multiSelect,omitempty"`
+	Options       []QuestionOption `json:"options,omitempty"`
 }
 
 type ContextStats struct {

@@ -13,6 +13,26 @@ type Envelope struct {
 	Payload any
 }
 
+func (e Envelope) DecodePayload() (any, error) {
+	payload, err := payloadForType(e.Type)
+	if err != nil {
+		return nil, err
+	}
+	switch raw := e.Payload.(type) {
+	case json.RawMessage:
+		if err := json.Unmarshal(raw, payload); err != nil {
+			return nil, fmt.Errorf("decode %s: %w", e.Type, err)
+		}
+	case []byte:
+		if err := json.Unmarshal(raw, payload); err != nil {
+			return nil, fmt.Errorf("decode %s: %w", e.Type, err)
+		}
+	default:
+		return e.Payload, nil
+	}
+	return payload, nil
+}
+
 // ParseEnvelope reads raw JSON, looks at the type field, and unmarshals
 // into the correct concrete struct.
 func ParseEnvelope(data []byte) (*Envelope, error) {
@@ -63,6 +83,8 @@ func payloadForType(msgType string) (any, error) {
 	switch msgType {
 	case MsgTypeTask:
 		return &Task{}, nil
+	case MsgTypeTaskLifecycle:
+		return &TaskLifecycle{}, nil
 	case MsgTypeStop:
 		return &Stop{}, nil
 	case MsgTypePermissionResponse:

@@ -38,6 +38,11 @@ Dispatch a user message to a session.
 | taskId | uuid | |
 | sessionId | uuid | |
 | channelId | string | Routes stream events back to the correct browser tab |
+| attemptId | uuid? | Active task attempt created by the relay. |
+| attemptNumber | int? | Monotonic attempt number for the task. |
+| leaseExpiresAt | string? | ISO timestamp for the active relay lease. |
+| deadlineProfile | TaskDeadlines? | Daemon supervision deadline profile in milliseconds. |
+| turnKind | string? | `user`, `session_title`, `context_stats`, `compact`, or `control`. |
 | prompt | string | |
 | engine | "pi"? | Optional task execution engine. Empty means `"pi"`. |
 | provider | string? | Optional Pi provider id. Empty means `"claude-cli"`. |
@@ -69,8 +74,24 @@ Dispatch a user message to a session.
 | Field | Type | Notes |
 |---|---|---|
 | token | string | Bearer token scoped to one task. |
+| id | string? | Capability record identifier. |
+| attemptId | uuid? | Attempt that owns this capability. |
 | apiBaseUrl | string | Cloud app base URL for `/api/agent-plan/*`. |
 | expiresAt | string | ISO timestamp. |
+| snapshot | object? | Capability metadata snapshot used by cloud-side authorization. |
+
+`TaskDeadlines`:
+
+| Field | Type | Notes |
+|---|---|---|
+| processStartMs | int? | Process launch deadline. |
+| promptWriteMs | int? | Prompt write deadline. |
+| firstEventMs | int? | Deadline for the first parsed runtime event. |
+| firstVisibleEventMs | int? | Deadline for the first user-visible runtime event. |
+| streamIdleMs | int? | Stream inactivity deadline. |
+| toolIdleMs | int? | Tool execution inactivity deadline. |
+| userInputMs | int? | User input wait deadline. |
+| cleanupTermMs | int? | Grace period for process cleanup. |
 
 `Task.contextRefs` carries project-relative file and folder references selected in the cloud composer. The relay forwards this field only to daemons that advertise `Hello.capabilities.contextRefs`.
 
@@ -220,6 +241,63 @@ and persists session-scoped history to Postgres on a separate path. Browser
 reconnect recovery happens by reloading persisted messages by session and
 sequence from the database. There is no daemon ↔ relay ack/replay/WAL handshake
 in protocol version 1.
+
+### Task attempt lifecycle
+
+The relay owns task attempts. A dispatched `task` includes the active
+`attemptId`, `attemptNumber`, `leaseExpiresAt`, `deadlineProfile`, and
+`turnKind`. Daemons echo attempt metadata on task-adjacent frames so the relay
+can associate runtime events with the active attempt.
+
+`taskLifecycle` is the structured lifecycle frame for attempt diagnostics:
+
+| Field | Type | Notes |
+|---|---|---|
+| type | "taskLifecycle" | |
+| taskId | uuid | |
+| attemptId | uuid | |
+| attemptNumber | int | |
+| sessionId | uuid | |
+| channelId | string | |
+| phase | string | Lifecycle phase. |
+| status | string | Durable attempt status. |
+| retryable | boolean? | Terminal retry-safety hint. |
+| failureCode | string? | Stable terminal failure code. |
+| message | string? | Operator-facing detail. |
+| userMessage | string? | User-facing failure detail. |
+| observedAt | string | RFC3339 timestamp. |
+| deadlineAt | string? | Deadline associated with the phase. |
+| pid | int? | Local process id when known. |
+| provider | string? | Pi provider id. |
+| model | string? | Provider model id. |
+| requestId | uuid? | Root correlation id. |
+| traceparent | string? | W3C trace context. |
+
+Lifecycle phases are `accepted`, `queued`, `started`, `pi_started`,
+`prompt_written`, `first_event_seen`, `first_visible_event_seen`, `streaming`,
+`tool_started`, `tool_finished`, `waiting_input`, `input_received`,
+`cleanup_started`, `cleanup_finished`, `heartbeat`, `retry_scheduled`,
+`completed`, `failed`, `canceled`, `timed_out`, and `lost`.
+
+Attempt statuses are `created`, `queued`, `started`, `pi_started`,
+`prompt_written`, `first_event_seen`, `first_visible_event_seen`, `streaming`,
+`waiting_input`, `tool_running`, `cleanup_started`, `cleanup_finished`,
+`completed`, `failed`, `canceled`, `timed_out`, and `lost`.
+
+The relay filters stale lifecycle frames by the active tuple
+`(taskId, attemptId, sessionId, machineId)`. Frames that do not match the active
+attempt are ignored for aggregate task state and may still be logged for
+diagnostics. Terminal lifecycle phases map to task aggregate states:
+`completed`, `failed`, `canceled`, `timed_out`, and `lost`.
+
+Retry safety is attempt-local. A timeout before visible output or side effects
+can be marked `retryable`; phases after visible output or tool execution make
+automatic retry unsafe unless a higher-level policy explicitly allows it.
+
+Control turns use `turnKind` to distinguish user-visible work from local
+maintenance such as session title generation, context stats, compaction, and
+daemon control flows. Consumers that do not understand attempt fields ignore
+them as additive JSON fields.
 
 ### `planningEvent`
 

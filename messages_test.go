@@ -1834,3 +1834,93 @@ func TestMachineStatusRoundTrip(t *testing.T) {
 		t.Fatalf("unexpected payload: %+v", got)
 	}
 }
+
+func TestTaskLifecycleRoundTrip(t *testing.T) {
+	observedAt := time.Date(2026, 4, 30, 12, 30, 55, 0, time.UTC)
+	deadlineAt := observedAt.Add(90 * time.Second)
+	msg := &TaskLifecycle{
+		Type:          MsgTypeTaskLifecycle,
+		TaskID:        "task-1",
+		AttemptID:     "attempt-1",
+		AttemptNumber: 1,
+		SessionID:     "session-1",
+		ChannelID:     "channel-1",
+		Phase:         TaskLifecyclePhasePromptWritten,
+		Status:        TaskAttemptStatusPromptWritten,
+		ObservedAt:    observedAt,
+		DeadlineAt:    &deadlineAt,
+		PID:           12345,
+		Provider:      "claude-cli",
+		Model:         "claude-sonnet-4-6",
+		RequestID:     "request-1",
+		Traceparent:   "00-b1a91ab1f89d5141c7280de8bd272d73-1111111111111111-01",
+	}
+
+	raw, err := json.Marshal(msg)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+
+	env := Envelope{Type: MsgTypeTaskLifecycle, Payload: raw}
+	decoded, err := env.DecodePayload()
+	if err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	got, ok := decoded.(*TaskLifecycle)
+	if !ok {
+		t.Fatalf("decoded type = %T", decoded)
+	}
+	if got.AttemptID != "attempt-1" || got.Phase != TaskLifecyclePhasePromptWritten {
+		t.Fatalf("lifecycle fields missing: %#v", got)
+	}
+}
+
+func TestTaskAttemptFieldsRoundTrip(t *testing.T) {
+	task := Task{
+		Type:           MsgTypeTask,
+		TaskID:         "task-1",
+		SessionID:      "session-1",
+		ChannelID:      "channel-1",
+		Prompt:         "hello",
+		Model:          "claude-sonnet-4-6",
+		Effort:         "max",
+		PermissionMode: "acceptEdits",
+		CWD:            "/tmp/project",
+		AttemptID:      "attempt-1",
+		AttemptNumber:  2,
+		LeaseExpiresAt: "2026-04-30T12:32:55Z",
+		TurnKind:       TurnKindUser,
+		DeadlineProfile: TaskDeadlines{
+			ProcessStartMs:      15000,
+			PromptWriteMs:       5000,
+			FirstEventMs:        90000,
+			FirstVisibleEventMs: 120000,
+			StreamIdleMs:        120000,
+			ToolIdleMs:          300000,
+			UserInputMs:         600000,
+			CleanupTermMs:       2000,
+		},
+		PlanCapability: &PlanCapability{
+			ID:         "cap-1",
+			AttemptID:  "attempt-1",
+			Token:      "opaque",
+			APIBaseURL: "https://app.gsd.build",
+			ExpiresAt:  "2026-04-30T12:45:55Z",
+		},
+	}
+
+	raw, err := json.Marshal(task)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	var got Task
+	if err := json.Unmarshal(raw, &got); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if got.AttemptID != "attempt-1" || got.DeadlineProfile.FirstEventMs != 90000 {
+		t.Fatalf("attempt/deadline fields missing: %#v", got)
+	}
+	if got.PlanCapability == nil || got.PlanCapability.AttemptID != "attempt-1" {
+		t.Fatalf("plan capability attempt missing: %#v", got.PlanCapability)
+	}
+}
