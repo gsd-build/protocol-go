@@ -88,12 +88,90 @@ func TestEnvelopeRoundTrip(t *testing.T) {
 			CapturedAt:  "2026-04-28T20:00:01Z",
 		}},
 		{"browserControlClaim", &BrowserControlClaim{
-			Type:      MsgTypeBrowserControlClaim,
+			Type:           MsgTypeBrowserControlClaim,
+			BrowserID:      "browser_123",
+			SessionID:      "session_123",
+			ChannelID:      "channel_123",
+			Owner:          BrowserOwnerLex,
+			Reason:         "pointer",
+			ControlVersion: 3,
+		}},
+		{"browserUserInput rich metadata", &BrowserUserInput{
+			Type:             MsgTypeBrowserUserInput,
+			BrowserID:        "browser_123",
+			SessionID:        "session_123",
+			ChannelID:        "channel_123",
+			Owner:            BrowserOwnerLex,
+			Kind:             BrowserInputKindClick,
+			X:                floatPtr(42.5),
+			Y:                floatPtr(19.25),
+			FrameSeq:         17,
+			ControlVersion:   3,
+			CoordinateSpace:  BrowserCoordinateSpaceFrameCssPixels,
+			ViewportWidth:    1280,
+			ViewportHeight:   720,
+			FrameWidth:       1280,
+			FrameHeight:      720,
+			DevicePixelRatio: 2,
+			RenderedLeft:     0,
+			RenderedTop:      12,
+			RenderedWidth:    960,
+			RenderedHeight:   540,
+		}},
+		{"browserUserInputAck", &BrowserUserInputAck{
+			Type:           MsgTypeBrowserUserInputAck,
+			BrowserID:      "browser_123",
+			SessionID:      "session_123",
+			ChannelID:      "channel_123",
+			InputID:        "input_123",
+			Accepted:       false,
+			Reason:         BrowserInputRejectStaleFrame,
+			ControlVersion: 3,
+			AckedAt:        "2026-04-30T12:00:00Z",
+		}},
+		{"browserTransportStatus", &BrowserTransportStatus{
+			Type:              MsgTypeBrowserTransportStatus,
+			BrowserID:         "browser_123",
+			SessionID:         "session_123",
+			ChannelID:         "channel_123",
+			Status:            "dropping_frames",
+			QueueDepth:        3,
+			DroppedFrameCount: 8,
+			MaxFrameBytes:     1048576,
+			At:                "2026-04-30T12:00:01Z",
+		}},
+		{"browserBridgeAccessOpen", &BrowserBridgeAccessOpen{
+			Type:        MsgTypeBrowserBridgeAccessOpen,
+			RequestID:   "bridge_req_123",
+			PreviewID:   "preview_123",
+			GrantID:     "grant_123",
+			BrowserID:   "browser_123",
+			SessionID:   "session_123",
+			ChannelID:   "channel_123",
+			MachineID:   "machine_123",
+			BridgeMode:  "local-direct",
+			RequestedAt: "2026-04-30T12:00:02Z",
+		}},
+		{"browserBridgeAccessOpened", &BrowserBridgeAccessOpened{
+			Type:       MsgTypeBrowserBridgeAccessOpened,
+			RequestID:  "bridge_req_123",
+			PreviewID:  "preview_123",
+			GrantID:    "grant_123",
+			BrowserID:  "browser_123",
+			SessionID:  "session_123",
+			ChannelID:  "channel_123",
+			BridgeMode: "preview-origin",
+			URL:        "https://preview_123.preview.gsd.build/",
+			ExpiresAt:  "2026-04-30T12:05:02Z",
+		}},
+		{"browserBridgeAccessClose", &BrowserBridgeAccessClose{
+			Type:      MsgTypeBrowserBridgeAccessClose,
+			PreviewID: "preview_123",
+			GrantID:   "grant_123",
 			BrowserID: "browser_123",
 			SessionID: "session_123",
 			ChannelID: "channel_123",
-			Owner:     "lex",
-			Reason:    "pointer",
+			Reason:    "closed",
 		}},
 		{"browserToolCall", &BrowserToolCall{
 			Type:       MsgTypeBrowserToolCall,
@@ -515,6 +593,55 @@ func TestEnvelopeRoundTrip(t *testing.T) {
 				t.Errorf("payload mismatch after round trip: want %v, got %v", original, final)
 			}
 		})
+	}
+}
+
+func TestBrowserUserInputMetadataJSONNames(t *testing.T) {
+	x := 42.5
+	y := 19.25
+	msg := BrowserUserInput{
+		Type:             MsgTypeBrowserUserInput,
+		BrowserID:        "browser_123",
+		SessionID:        "session_123",
+		ChannelID:        "channel_123",
+		Owner:            BrowserOwnerLex,
+		Kind:             BrowserInputKindClick,
+		X:                &x,
+		Y:                &y,
+		FrameSeq:         17,
+		ControlVersion:   3,
+		CoordinateSpace:  BrowserCoordinateSpaceFrameCssPixels,
+		ViewportWidth:    1280,
+		ViewportHeight:   720,
+		FrameWidth:       1280,
+		FrameHeight:      720,
+		DevicePixelRatio: 2,
+		RenderedLeft:     0,
+		RenderedTop:      12,
+		RenderedWidth:    960,
+		RenderedHeight:   540,
+	}
+	data, err := json.Marshal(msg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, key := range []string{
+		"frameSeq",
+		"controlVersion",
+		"coordinateSpace",
+		"viewportWidth",
+		"viewportHeight",
+		"frameWidth",
+		"frameHeight",
+		"devicePixelRatio",
+		"renderedLeft",
+		"renderedTop",
+		"renderedWidth",
+		"renderedHeight",
+	} {
+		if !bytes.Contains(data, []byte(`"`+key+`"`)) {
+			t.Fatalf("expected %s in %s", key, data)
+		}
 	}
 }
 
