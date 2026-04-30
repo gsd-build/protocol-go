@@ -836,9 +836,14 @@ Browser support is advertised in `hello.capabilities`.
 | seq | int64 |
 | contentType | string |
 | dataBase64 | base64 string |
+| frameRef | string? |
 | width | int |
 | height | int |
+| viewportWidth | int? |
+| viewportHeight | int? |
+| devicePixelRatio | float64? |
 | capturedAt | iso8601 string |
+| droppedPriorCount | int? |
 
 #### `browserCursor`
 
@@ -895,6 +900,7 @@ Browser support is advertised in `hello.capabilities`.
 | channelId | string |
 | owner | string |
 | reason | string? |
+| controlVersion | int64? |
 
 #### `browserControlRelease`
 
@@ -906,12 +912,14 @@ Browser support is advertised in `hello.capabilities`.
 | channelId | string |
 | owner | string |
 | reason | string? |
+| controlVersion | int64? |
 
 #### `browserUserInput`
 
 | Field | Type |
 |---|---|
 | type | "browserUserInput" |
+| inputId | string? |
 | browserId | string |
 | sessionId | uuid |
 | channelId | string |
@@ -923,6 +931,107 @@ Browser support is advertised in `hello.capabilities`.
 | key | string? |
 | deltaX | float64? |
 | deltaY | float64? |
+| frameSeq | int64? |
+| controlVersion | int64? |
+| coordinateSpace | string? |
+| viewportWidth | int? |
+| viewportHeight | int? |
+| frameWidth | int? |
+| frameHeight | int? |
+| devicePixelRatio | float64? |
+| renderedLeft | float64 |
+| renderedTop | float64 |
+| renderedWidth | float64 |
+| renderedHeight | float64 |
+
+#### `browserUserInputAck`
+
+| Field | Type |
+|---|---|
+| type | "browserUserInputAck" |
+| browserId | string |
+| sessionId | uuid |
+| channelId | string |
+| inputId | string? |
+| accepted | bool |
+| reason | string? |
+| controlVersion | int64? |
+| ackedAt | iso8601 string |
+
+#### `browserTransportStatus`
+
+| Field | Type |
+|---|---|
+| type | "browserTransportStatus" |
+| browserId | string |
+| sessionId | uuid |
+| channelId | string |
+| status | string |
+| queueDepth | int? |
+| droppedFrameCount | int64? |
+| maxFrameBytes | int? |
+| at | iso8601 string |
+
+### Browser Input Safety
+
+Browser input messages include the source frame sequence, control version,
+viewport dimensions, captured frame dimensions, rendered panel rectangle, and
+coordinate space. Receivers reject stale-frame and stale-control input with
+`browserUserInputAck`.
+
+### Browser Transport Status
+
+Browser frame producers may drop, coalesce, downscale, or reference frames when
+encoded frames exceed transport limits. Control and approval messages have
+priority over frame delivery.
+
+### Preview Bridge Access
+
+Preview-origin bridge access is short-lived, grant-bound, and separate from
+iframe preview cookies. Local-direct bridge mode navigates the browser directly
+to the approved loopback target.
+
+#### `browserBridgeAccessOpen`
+
+| Field | Type |
+|---|---|
+| type | "browserBridgeAccessOpen" |
+| requestId | string |
+| previewId | string |
+| grantId | string |
+| browserId | string? |
+| sessionId | uuid |
+| channelId | string |
+| machineId | string |
+| bridgeMode | string |
+| requestedAt | iso8601 string |
+
+#### `browserBridgeAccessOpened`
+
+| Field | Type |
+|---|---|
+| type | "browserBridgeAccessOpened" |
+| requestId | string |
+| previewId | string |
+| grantId | string |
+| browserId | string? |
+| sessionId | uuid |
+| channelId | string |
+| bridgeMode | string |
+| url | string |
+| expiresAt | iso8601 string |
+
+#### `browserBridgeAccessClose`
+
+| Field | Type |
+|---|---|
+| type | "browserBridgeAccessClose" |
+| previewId | string |
+| grantId | string |
+| browserId | string? |
+| sessionId | uuid |
+| channelId | string |
+| reason | string? |
 
 ### Tool Calls
 

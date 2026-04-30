@@ -193,6 +193,16 @@ func payloadForType(msgType string) (any, error) {
 		return &BrowserControlRelease{}, nil
 	case MsgTypeBrowserUserInput:
 		return &BrowserUserInput{}, nil
+	case MsgTypeBrowserUserInputAck:
+		return &BrowserUserInputAck{}, nil
+	case MsgTypeBrowserTransportStatus:
+		return &BrowserTransportStatus{}, nil
+	case MsgTypeBrowserBridgeAccessOpen:
+		return &BrowserBridgeAccessOpen{}, nil
+	case MsgTypeBrowserBridgeAccessOpened:
+		return &BrowserBridgeAccessOpened{}, nil
+	case MsgTypeBrowserBridgeAccessClose:
+		return &BrowserBridgeAccessClose{}, nil
 	case MsgTypeBrowserSensitiveActionRequest:
 		return &BrowserSensitiveActionRequest{}, nil
 	case MsgTypeBrowserSensitiveActionResponse:

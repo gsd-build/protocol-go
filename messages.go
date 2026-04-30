@@ -84,11 +84,39 @@ const (
 	MsgTypeBrowserControlClaim            MessageType = "browserControlClaim"
 	MsgTypeBrowserControlRelease          MessageType = "browserControlRelease"
 	MsgTypeBrowserUserInput               MessageType = "browserUserInput"
+	MsgTypeBrowserUserInputAck            MessageType = "browserUserInputAck"
+	MsgTypeBrowserTransportStatus         MessageType = "browserTransportStatus"
+	MsgTypeBrowserBridgeAccessOpen        MessageType = "browserBridgeAccessOpen"
+	MsgTypeBrowserBridgeAccessOpened      MessageType = "browserBridgeAccessOpened"
+	MsgTypeBrowserBridgeAccessClose       MessageType = "browserBridgeAccessClose"
 	MsgTypeBrowserSensitiveActionRequest  MessageType = "browserSensitiveActionRequest"
 	MsgTypeBrowserSensitiveActionResponse MessageType = "browserSensitiveActionResponse"
 
 	MsgTypePlanningEvent    MessageType = "planningEvent"
 	MsgTypePlanningEventAck MessageType = "planningEventAck"
+)
+
+const (
+	BrowserOwnerAgent    = "agent"
+	BrowserOwnerLex      = "lex"
+	BrowserOwnerPaused   = "paused"
+	BrowserOwnerApproval = "approval"
+
+	BrowserInputKindClick       = "click"
+	BrowserInputKindPointerMove = "pointer_move"
+	BrowserInputKindPointerDown = "pointer_down"
+	BrowserInputKindPointerUp   = "pointer_up"
+	BrowserInputKindWheel       = "wheel"
+	BrowserInputKindKeyDown     = "key_down"
+	BrowserInputKindKeyUp       = "key_up"
+	BrowserInputKindText        = "text"
+
+	BrowserCoordinateSpaceFrameCssPixels = "frame_css_pixels"
+
+	BrowserInputRejectStaleFrame     = "stale_frame"
+	BrowserInputRejectOwnerMismatch  = "owner_mismatch"
+	BrowserInputRejectExpiredGrant   = "expired_grant"
+	BrowserInputRejectInvalidPayload = "invalid_payload"
 )
 
 type ContextRef struct {
@@ -616,6 +644,9 @@ type BrowserSessionOpen struct {
 	MachineID  string      `json:"machineId"`
 	IdentityID string      `json:"identityId,omitempty"`
 	Mode       string      `json:"mode"`
+	InitialURL string      `json:"initialUrl,omitempty"`
+	BridgeMode string      `json:"bridgeMode,omitempty"`
+	PreviewID  string      `json:"sourcePreviewId,omitempty"`
 	ExpiresAt  string      `json:"expiresAt"`
 }
 
@@ -660,16 +691,21 @@ type BrowserSessionError struct {
 }
 
 type BrowserFrame struct {
-	Type        MessageType `json:"type"`
-	BrowserID   string      `json:"browserId"`
-	SessionID   string      `json:"sessionId"`
-	ChannelID   string      `json:"channelId"`
-	Seq         int64       `json:"seq"`
-	ContentType string      `json:"contentType"`
-	DataBase64  string      `json:"dataBase64"`
-	Width       int         `json:"width"`
-	Height      int         `json:"height"`
-	CapturedAt  string      `json:"capturedAt"`
+	Type              MessageType `json:"type"`
+	BrowserID         string      `json:"browserId"`
+	SessionID         string      `json:"sessionId"`
+	ChannelID         string      `json:"channelId"`
+	Seq               int64       `json:"seq"`
+	ContentType       string      `json:"contentType"`
+	DataBase64        string      `json:"dataBase64,omitempty"`
+	FrameRef          string      `json:"frameRef,omitempty"`
+	Width             int         `json:"width"`
+	Height            int         `json:"height"`
+	ViewportWidth     int         `json:"viewportWidth,omitempty"`
+	ViewportHeight    int         `json:"viewportHeight,omitempty"`
+	DevicePixelRatio  float64     `json:"devicePixelRatio,omitempty"`
+	CapturedAt        string      `json:"capturedAt"`
+	DroppedPriorCount int         `json:"droppedPriorCount,omitempty"`
 }
 
 type BrowserCursor struct {
@@ -729,36 +765,111 @@ type BrowserToolResult struct {
 }
 
 type BrowserControlClaim struct {
-	Type      MessageType `json:"type"`
-	BrowserID string      `json:"browserId"`
-	SessionID string      `json:"sessionId"`
-	ChannelID string      `json:"channelId"`
-	Owner     string      `json:"owner"`
-	Reason    string      `json:"reason,omitempty"`
+	Type           MessageType `json:"type"`
+	BrowserID      string      `json:"browserId"`
+	SessionID      string      `json:"sessionId"`
+	ChannelID      string      `json:"channelId"`
+	Owner          string      `json:"owner"`
+	Reason         string      `json:"reason,omitempty"`
+	ControlVersion int64       `json:"controlVersion,omitempty"`
 }
 
 type BrowserControlRelease struct {
-	Type      MessageType `json:"type"`
-	BrowserID string      `json:"browserId"`
-	SessionID string      `json:"sessionId"`
-	ChannelID string      `json:"channelId"`
-	Owner     string      `json:"owner"`
-	Reason    string      `json:"reason,omitempty"`
+	Type           MessageType `json:"type"`
+	BrowserID      string      `json:"browserId"`
+	SessionID      string      `json:"sessionId"`
+	ChannelID      string      `json:"channelId"`
+	Owner          string      `json:"owner"`
+	Reason         string      `json:"reason,omitempty"`
+	ControlVersion int64       `json:"controlVersion,omitempty"`
 }
 
 type BrowserUserInput struct {
+	Type             MessageType `json:"type"`
+	InputID          string      `json:"inputId,omitempty"`
+	BrowserID        string      `json:"browserId"`
+	SessionID        string      `json:"sessionId"`
+	ChannelID        string      `json:"channelId"`
+	Owner            string      `json:"owner"`
+	Kind             string      `json:"kind"`
+	X                *float64    `json:"x,omitempty"`
+	Y                *float64    `json:"y,omitempty"`
+	Text             string      `json:"text,omitempty"`
+	Key              string      `json:"key,omitempty"`
+	DeltaX           *float64    `json:"deltaX,omitempty"`
+	DeltaY           *float64    `json:"deltaY,omitempty"`
+	FrameSeq         int64       `json:"frameSeq,omitempty"`
+	ControlVersion   int64       `json:"controlVersion,omitempty"`
+	CoordinateSpace  string      `json:"coordinateSpace,omitempty"`
+	ViewportWidth    int         `json:"viewportWidth,omitempty"`
+	ViewportHeight   int         `json:"viewportHeight,omitempty"`
+	FrameWidth       int         `json:"frameWidth,omitempty"`
+	FrameHeight      int         `json:"frameHeight,omitempty"`
+	DevicePixelRatio float64     `json:"devicePixelRatio,omitempty"`
+	RenderedLeft     float64     `json:"renderedLeft"`
+	RenderedTop      float64     `json:"renderedTop"`
+	RenderedWidth    float64     `json:"renderedWidth"`
+	RenderedHeight   float64     `json:"renderedHeight"`
+}
+
+type BrowserUserInputAck struct {
+	Type           MessageType `json:"type"`
+	BrowserID      string      `json:"browserId"`
+	SessionID      string      `json:"sessionId"`
+	ChannelID      string      `json:"channelId"`
+	InputID        string      `json:"inputId,omitempty"`
+	Accepted       bool        `json:"accepted"`
+	Reason         string      `json:"reason,omitempty"`
+	ControlVersion int64       `json:"controlVersion,omitempty"`
+	AckedAt        string      `json:"ackedAt"`
+}
+
+type BrowserTransportStatus struct {
+	Type              MessageType `json:"type"`
+	BrowserID         string      `json:"browserId"`
+	SessionID         string      `json:"sessionId"`
+	ChannelID         string      `json:"channelId"`
+	Status            string      `json:"status"`
+	QueueDepth        int         `json:"queueDepth,omitempty"`
+	DroppedFrameCount int64       `json:"droppedFrameCount,omitempty"`
+	MaxFrameBytes     int         `json:"maxFrameBytes,omitempty"`
+	At                string      `json:"at"`
+}
+
+type BrowserBridgeAccessOpen struct {
+	Type        MessageType `json:"type"`
+	RequestID   string      `json:"requestId"`
+	PreviewID   string      `json:"previewId"`
+	GrantID     string      `json:"grantId"`
+	BrowserID   string      `json:"browserId,omitempty"`
+	SessionID   string      `json:"sessionId"`
+	ChannelID   string      `json:"channelId"`
+	MachineID   string      `json:"machineId"`
+	BridgeMode  string      `json:"bridgeMode"`
+	RequestedAt string      `json:"requestedAt"`
+}
+
+type BrowserBridgeAccessOpened struct {
+	Type       MessageType `json:"type"`
+	RequestID  string      `json:"requestId"`
+	PreviewID  string      `json:"previewId"`
+	GrantID    string      `json:"grantId"`
+	BrowserID  string      `json:"browserId,omitempty"`
+	SessionID  string      `json:"sessionId"`
+	ChannelID  string      `json:"channelId"`
+	BridgeMode string      `json:"bridgeMode"`
+	URL        string      `json:"url"`
+	ExpiresAt  string      `json:"expiresAt"`
+}
+
+type BrowserBridgeAccessClose struct {
 	Type      MessageType `json:"type"`
-	BrowserID string      `json:"browserId"`
+	PreviewID string      `json:"previewId"`
+	GrantID   string      `json:"grantId"`
+	BrowserID string      `json:"browserId,omitempty"`
 	SessionID string      `json:"sessionId"`
 	ChannelID string      `json:"channelId"`
-	Owner     string      `json:"owner"`
-	Kind      string      `json:"kind"`
-	X         *float64    `json:"x,omitempty"`
-	Y         *float64    `json:"y,omitempty"`
-	Text      string      `json:"text,omitempty"`
-	Key       string      `json:"key,omitempty"`
-	DeltaX    *float64    `json:"deltaX,omitempty"`
-	DeltaY    *float64    `json:"deltaY,omitempty"`
+	Reason    string      `json:"reason,omitempty"`
 }
 
 type BrowserSensitiveActionRequest struct {
