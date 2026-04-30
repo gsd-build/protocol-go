@@ -518,6 +518,69 @@ func TestEnvelopeRoundTrip(t *testing.T) {
 	}
 }
 
+func TestPlanningEventRoundTrip(t *testing.T) {
+	in := &PlanningEvent{
+		Type:              MsgTypePlanningEvent,
+		EventID:           "event-1",
+		SchemaVersion:     1,
+		ProjectionVersion: 1,
+		ProjectID:         "project-1",
+		SourceID:          "daemon-1",
+		SourceKind:        "daemon",
+		SourceSeq:         7,
+		RunID:             "run-1",
+		PlanID:            "plan-1",
+		ItemID:            "item-1",
+		ActorType:         "agent",
+		ActorID:           "agent-1",
+		EventKind:         "plan.done",
+		IdempotencyKey:    "done-1",
+		OccurredAt:        "2026-04-30T12:00:00Z",
+		PayloadJSON:       json.RawMessage(`{"summary":"Done"}`),
+		EvidenceIDs:       []string{"evidence-1"},
+	}
+	data, err := json.Marshal(in)
+	if err != nil {
+		t.Fatal(err)
+	}
+	env, err := ParseEnvelope(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	out, ok := env.Payload.(*PlanningEvent)
+	if !ok {
+		t.Fatalf("payload type = %T", env.Payload)
+	}
+	if out.EventID != in.EventID || out.SourceSeq != in.SourceSeq {
+		t.Fatalf("out = %#v, want %#v", out, in)
+	}
+}
+
+func TestPlanningEventAckRoundTrip(t *testing.T) {
+	in := &PlanningEventAck{
+		Type:      MsgTypePlanningEventAck,
+		EventID:   "event-1",
+		SourceID:  "daemon-1",
+		SourceSeq: 7,
+		Accepted:  true,
+	}
+	data, err := json.Marshal(in)
+	if err != nil {
+		t.Fatal(err)
+	}
+	env, err := ParseEnvelope(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	out, ok := env.Payload.(*PlanningEventAck)
+	if !ok {
+		t.Fatalf("payload type = %T", env.Payload)
+	}
+	if !out.Accepted || out.EventID != "event-1" {
+		t.Fatalf("out = %#v", out)
+	}
+}
+
 func TestAgentTerminalEnvelopeRejectsInvalidFieldTypes(t *testing.T) {
 	cases := []struct {
 		name string

@@ -86,6 +86,9 @@ const (
 	MsgTypeBrowserUserInput               MessageType = "browserUserInput"
 	MsgTypeBrowserSensitiveActionRequest  MessageType = "browserSensitiveActionRequest"
 	MsgTypeBrowserSensitiveActionResponse MessageType = "browserSensitiveActionResponse"
+
+	MsgTypePlanningEvent    MessageType = "planningEvent"
+	MsgTypePlanningEventAck MessageType = "planningEventAck"
 )
 
 type ContextRef struct {
@@ -100,6 +103,44 @@ type PlanCapability struct {
 	Token      string `json:"token"`
 	APIBaseURL string `json:"apiBaseUrl"`
 	ExpiresAt  string `json:"expiresAt"`
+}
+
+type PlanningEvent struct {
+	Type              MessageType     `json:"type"`
+	EventID           string          `json:"eventId"`
+	SchemaVersion     int             `json:"schemaVersion"`
+	ProjectionVersion int             `json:"projectionVersion"`
+	ProjectID         string          `json:"projectId"`
+	SourceID          string          `json:"sourceId"`
+	SourceKind        string          `json:"sourceKind"`
+	SourceSeq         int64           `json:"sourceSeq"`
+	SourceCursor      string          `json:"sourceCursor,omitempty"`
+	RunID             string          `json:"runId"`
+	WorkstreamID      string          `json:"workstreamId,omitempty"`
+	PlanID            string          `json:"planId,omitempty"`
+	ItemID            string          `json:"itemId,omitempty"`
+	ActorType         string          `json:"actorType"`
+	ActorID           string          `json:"actorId"`
+	ActorRole         string          `json:"actorRole,omitempty"`
+	SessionID         string          `json:"sessionId,omitempty"`
+	TaskID            string          `json:"taskId,omitempty"`
+	EventKind         string          `json:"eventKind"`
+	IdempotencyKey    string          `json:"idempotencyKey"`
+	CausationID       string          `json:"causationId,omitempty"`
+	OccurredAt        string          `json:"occurredAt"`
+	PayloadJSON       json.RawMessage `json:"payload"`
+	EvidenceIDs       []string        `json:"evidenceIds,omitempty"`
+	ParentEventIDs    []string        `json:"parentEventIds,omitempty"`
+	TraceJSON         json.RawMessage `json:"trace,omitempty"`
+}
+
+type PlanningEventAck struct {
+	Type      MessageType `json:"type"`
+	EventID   string      `json:"eventId"`
+	SourceID  string      `json:"sourceId"`
+	SourceSeq int64       `json:"sourceSeq"`
+	Accepted  bool        `json:"accepted"`
+	Error     string      `json:"error,omitempty"`
 }
 
 // Task is sent from the browser to the daemon to dispatch a user message.
