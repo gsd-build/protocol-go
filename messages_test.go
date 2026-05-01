@@ -214,6 +214,68 @@ func TestBrowserWorkbenchContractRoundTrip(t *testing.T) {
 	}
 }
 
+func TestBrowserWorkbenchEnvelopeIgnoresUnknownFields(t *testing.T) {
+	cases := []struct {
+		name string
+		raw  string
+	}{
+		{"control state", `{"type":"browserControlState","browserId":"browser_1","sessionId":"session_1","channelId":"channel_1","owner":"lex","controlVersion":7,"accepted":true,"at":"2026-05-01T20:00:00Z","unknown":"ok"}`},
+		{"control claim request", `{"type":"browserControlClaimRequest","claimId":"claim_1","browserId":"browser_1","sessionId":"session_1","channelId":"channel_1","owner":"lex","requestedBy":"user_1","requestedAt":"2026-05-01T20:00:00Z","unknown":"ok"}`},
+		{"claim and input", `{"type":"browserClaimAndInput","claimId":"claim_1","browserId":"browser_1","sessionId":"session_1","channelId":"channel_1","input":{"browserId":"browser_1","sessionId":"session_1","channelId":"channel_1","owner":"lex","kind":"pointer","unknown":"ok"},"unknown":"ok"}`},
+		{"evidence created", `{"type":"browserEvidenceCreated","evidenceId":"evidence_1","browserId":"browser_1","sessionId":"session_1","channelId":"channel_1","actor":"daemon","status":"succeeded","eventType":"navigation","summary":"Opened GitHub","redactionStatus":"safe","createdAt":"2026-05-01T20:00:00Z","unknown":"ok"}`},
+		{"debug bundle created", `{"type":"browserDebugBundleCreated","bundleId":"bundle_1","browserId":"browser_1","sessionId":"session_1","channelId":"channel_1","redactionStatus":"local_only","residency":"local_only","createdAt":"2026-05-01T20:00:00Z","unknown":"ok"}`},
+		{"identity available", `{"type":"browserIdentityAvailable","identityId":"identity_1","machineId":"machine_1","identityScope":"project","displayName":"GitHub","status":"available","unknown":"ok"}`},
+		{"identity saved", `{"type":"browserIdentitySaved","identityId":"identity_1","machineId":"machine_1","identityScope":"project","identityKey":"github","displayName":"GitHub","savedAt":"2026-05-01T20:00:00Z","unknown":"ok"}`},
+		{"identity revoked", `{"type":"browserIdentityRevoked","identityId":"identity_1","machineId":"machine_1","identityScope":"project","identityKey":"github","revokedAt":"2026-05-01T20:00:00Z","acknowledged":true,"unknown":"ok"}`},
+		{"identity used", `{"type":"browserIdentityUsed","identityId":"identity_1","browserId":"browser_1","sessionId":"session_1","channelId":"channel_1","origin":"https://github.com","usedAt":"2026-05-01T20:00:00Z","unknown":"ok"}`},
+		{"identity bind", `{"type":"browserIdentityBind","bindingId":"binding_1","identityId":"identity_1","machineId":"machine_1","projectId":"project_1","originPattern":"https://github.com","boundBy":"user_1","boundAt":"2026-05-01T20:00:00Z","unknown":"ok"}`},
+		{"identity unbind", `{"type":"browserIdentityUnbind","bindingId":"binding_1","identityId":"identity_1","machineId":"machine_1","projectId":"project_1","revokedBy":"user_1","revokedAt":"2026-05-01T20:00:00Z","unknown":"ok"}`},
+		{"identity use approved", `{"type":"browserIdentityUseApproved","grantId":"grant_1","identityId":"identity_1","browserId":"browser_1","sessionId":"session_1","channelId":"channel_1","origin":"https://github.com","expiresAt":"2026-05-01T20:05:00Z","unknown":"ok"}`},
+		{"viewport set", `{"type":"browserViewportSet","browserId":"browser_1","sessionId":"session_1","channelId":"channel_1","viewportCssWidth":1280,"viewportCssHeight":720,"deviceScaleFactor":2,"requestedBy":"user_1","requestedAt":"2026-05-01T20:00:00Z","unknown":"ok"}`},
+		{"sensitive action request", `{"type":"browserSensitiveActionRequest","browserId":"browser_1","requestId":"request_1","sessionId":"session_1","channelId":"channel_1","taskId":"task_1","approvalId":"approval_1","nonce":"nonce_1","actorUserId":"user_1","grantId":"grant_1","toolUseId":"tool_1","method":"click","category":"external_effect","summary":"Submit form","parameterHash":"sha256:abc","expectedExternalEffect":"submit","sensitivity":"high","expiresAt":"2026-05-01T20:05:00Z","unknown":"ok"}`},
+		{"sensitive action response", `{"type":"browserSensitiveActionResponse","browserId":"browser_1","requestId":"request_1","sessionId":"session_1","channelId":"channel_1","approvalId":"approval_1","nonce":"nonce_1","actorUserId":"user_1","grantId":"grant_1","toolUseId":"tool_1","method":"click","category":"external_effect","parameterHash":"sha256:abc","expectedExternalEffect":"submit","sensitivity":"high","expiresAt":"2026-05-01T20:05:00Z","approved":false,"unknown":"ok"}`},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if _, err := ParseEnvelope([]byte(tc.raw)); err != nil {
+				t.Fatalf("parse envelope: %v", err)
+			}
+		})
+	}
+}
+
+func TestBrowserWorkbenchEnvelopeRejectsInvalidFieldTypes(t *testing.T) {
+	cases := []struct {
+		name string
+		raw  string
+	}{
+		{"control state controlVersion string", `{"type":"browserControlState","browserId":"browser_1","sessionId":"session_1","channelId":"channel_1","owner":"lex","controlVersion":"7","accepted":true,"at":"2026-05-01T20:00:00Z"}`},
+		{"control claim request claimId number", `{"type":"browserControlClaimRequest","claimId":1,"browserId":"browser_1","sessionId":"session_1","channelId":"channel_1","owner":"lex","requestedBy":"user_1","requestedAt":"2026-05-01T20:00:00Z"}`},
+		{"claim and input input string", `{"type":"browserClaimAndInput","claimId":"claim_1","browserId":"browser_1","sessionId":"session_1","channelId":"channel_1","input":"bad"}`},
+		{"evidence created actor number", `{"type":"browserEvidenceCreated","evidenceId":"evidence_1","browserId":"browser_1","sessionId":"session_1","channelId":"channel_1","actor":1,"status":"succeeded","eventType":"navigation","summary":"Opened GitHub","redactionStatus":"safe","createdAt":"2026-05-01T20:00:00Z"}`},
+		{"debug bundle created bundleId number", `{"type":"browserDebugBundleCreated","bundleId":1,"browserId":"browser_1","sessionId":"session_1","channelId":"channel_1","redactionStatus":"local_only","residency":"local_only","createdAt":"2026-05-01T20:00:00Z"}`},
+		{"identity available displayName array", `{"type":"browserIdentityAvailable","identityId":"identity_1","machineId":"machine_1","identityScope":"project","displayName":["GitHub"],"status":"available"}`},
+		{"identity saved machineId number", `{"type":"browserIdentitySaved","identityId":"identity_1","machineId":1,"identityScope":"project","identityKey":"github","displayName":"GitHub","savedAt":"2026-05-01T20:00:00Z"}`},
+		{"identity revoked acknowledged string", `{"type":"browserIdentityRevoked","identityId":"identity_1","machineId":"machine_1","identityScope":"project","identityKey":"github","revokedAt":"2026-05-01T20:00:00Z","acknowledged":"true"}`},
+		{"identity used browserId number", `{"type":"browserIdentityUsed","identityId":"identity_1","browserId":1,"sessionId":"session_1","channelId":"channel_1","origin":"https://github.com","usedAt":"2026-05-01T20:00:00Z"}`},
+		{"identity bind boundBy array", `{"type":"browserIdentityBind","bindingId":"binding_1","identityId":"identity_1","machineId":"machine_1","projectId":"project_1","originPattern":"https://github.com","boundBy":["user_1"],"boundAt":"2026-05-01T20:00:00Z"}`},
+		{"identity unbind revokedAt object", `{"type":"browserIdentityUnbind","bindingId":"binding_1","identityId":"identity_1","machineId":"machine_1","projectId":"project_1","revokedBy":"user_1","revokedAt":{}}`},
+		{"identity use approved expiresAt array", `{"type":"browserIdentityUseApproved","grantId":"grant_1","identityId":"identity_1","browserId":"browser_1","sessionId":"session_1","channelId":"channel_1","origin":"https://github.com","expiresAt":["soon"]}`},
+		{"viewport set width string", `{"type":"browserViewportSet","browserId":"browser_1","sessionId":"session_1","channelId":"channel_1","viewportCssWidth":"1280","viewportCssHeight":720,"deviceScaleFactor":2,"requestedBy":"user_1","requestedAt":"2026-05-01T20:00:00Z"}`},
+		{"sensitive action request approved bool", `{"type":"browserSensitiveActionRequest","browserId":"browser_1","requestId":"request_1","sessionId":"session_1","channelId":"channel_1","taskId":"task_1","approvalId":"approval_1","nonce":"nonce_1","actorUserId":"user_1","grantId":"grant_1","toolUseId":"tool_1","method":"click","category":"external_effect","summary":"Submit form","parameterHash":"sha256:abc","expectedExternalEffect":"submit","sensitivity":"high","expiresAt":false}`},
+		{"sensitive action response approved string", `{"type":"browserSensitiveActionResponse","browserId":"browser_1","requestId":"request_1","sessionId":"session_1","channelId":"channel_1","approvalId":"approval_1","nonce":"nonce_1","actorUserId":"user_1","grantId":"grant_1","toolUseId":"tool_1","method":"click","category":"external_effect","parameterHash":"sha256:abc","expectedExternalEffect":"submit","sensitivity":"high","expiresAt":"2026-05-01T20:05:00Z","approved":"false"}`},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if _, err := ParseEnvelope([]byte(tc.raw)); err == nil {
+				t.Fatal("expected parse error")
+			}
+		})
+	}
+}
+
 func TestBrowserUserInputAckCarriesReasonCode(t *testing.T) {
 	msg := &BrowserUserInputAck{
 		Type:             MsgTypeBrowserUserInputAck,
