@@ -3,6 +3,7 @@ package protocol
 import (
 	"bytes"
 	"encoding/json"
+	"strings"
 	"testing"
 	"time"
 )
@@ -1411,6 +1412,106 @@ func TestParseEnvelopeRejectsUnknownType(t *testing.T) {
 	_, err := ParseEnvelope([]byte(`{"type":"bogus"}`))
 	if err == nil {
 		t.Fatal("expected error for unknown type")
+	}
+}
+
+func TestParseEnvelopeBrowserLifecycleCompatibility(t *testing.T) {
+	cases := []struct {
+		name        string
+		messageType MessageType
+		raw         string
+	}{
+		{
+			name:        "browserToolCallStarted",
+			messageType: MsgTypeBrowserToolCallStarted,
+			raw: `{
+				"type":"browserToolCallStarted",
+				"browserId":"browser_123",
+				"grantId":"grant_123",
+				"sessionId":"session_123",
+				"channelId":"channel_123",
+				"taskId":"task_123",
+				"toolUseId":"toolu_123",
+				"method":"snapshot",
+				"summary":"Snapshot page",
+				"unknownFutureField":"ignored",
+				"at":"2026-05-01T12:00:00Z"
+			}`,
+		},
+		{
+			name:        "browserToolCallUpdated",
+			messageType: MsgTypeBrowserToolCallUpdated,
+			raw: `{
+				"type":"browserToolCallUpdated",
+				"browserId":"browser_123",
+				"grantId":"grant_123",
+				"sessionId":"session_123",
+				"channelId":"channel_123",
+				"taskId":"task_123",
+				"toolUseId":"toolu_123",
+				"status":"ok",
+				"summary":"Snapshot page",
+				"unknownFutureField":"ignored",
+				"at":"2026-05-01T12:00:01Z"
+			}`,
+		},
+		{
+			name:        "browserArtifactCreated",
+			messageType: MsgTypeBrowserArtifactCreated,
+			raw: `{
+				"type":"browserArtifactCreated",
+				"browserId":"browser_123",
+				"grantId":"grant_123",
+				"sessionId":"session_123",
+				"channelId":"channel_123",
+				"taskId":"task_123",
+				"artifactId":"artifact_123",
+				"kind":"snapshot",
+				"unknownFutureField":"ignored",
+				"createdAt":"2026-05-01T12:00:02Z"
+			}`,
+		},
+		{
+			name:        "browserToolResult",
+			messageType: MsgTypeBrowserToolResult,
+			raw: `{
+				"type":"browserToolResult",
+				"browserId":"browser_123",
+				"grantId":"grant_123",
+				"sessionId":"session_123",
+				"channelId":"channel_123",
+				"taskId":"task_123",
+				"toolUseId":"toolu_123",
+				"ok":true,
+				"resultJson":{"snapshotId":"snap_123"},
+				"unknownFutureField":"ignored"
+			}`,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name+" accepts unknown fields", func(t *testing.T) {
+			env, err := ParseEnvelope([]byte(tc.raw))
+			if err != nil {
+				t.Fatalf("ParseEnvelope: %v", err)
+			}
+			if env.Type != tc.messageType {
+				t.Fatalf("type = %q, want %q", env.Type, tc.messageType)
+			}
+			data, err := json.Marshal(env.Payload)
+			if err != nil {
+				t.Fatalf("marshal payload: %v", err)
+			}
+			if bytes.Contains(data, []byte("unknownFutureField")) {
+				t.Fatalf("unknown field survived round trip: %s", data)
+			}
+		})
+		t.Run(tc.name+" rejects invalid type", func(t *testing.T) {
+			raw := strings.Replace(tc.raw, string(tc.messageType), string(tc.messageType)+"Invalid", 1)
+			if _, err := ParseEnvelope([]byte(raw)); err == nil {
+				t.Fatal("expected invalid type error")
+			}
+		})
 	}
 }
 

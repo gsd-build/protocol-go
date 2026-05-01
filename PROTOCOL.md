@@ -1245,7 +1245,7 @@ to the approved loopback target.
 | taskId | uuid |
 | toolUseId | string |
 | ok | bool |
-| resultJson | json? | Redacted safe result data only. |
+| resultJson | json? — Redacted safe result data only. |
 | error | string? |
 | errorCode | string? |
 | recoveryHint | string? |
