@@ -77,6 +77,7 @@ const (
 	MsgTypeBrowserSessionClosed           MessageType = "browserSessionClosed"
 	MsgTypeBrowserSessionError            MessageType = "browserSessionError"
 	MsgTypeBrowserFrame                   MessageType = "browserFrame"
+	MsgTypeBrowserRefs                    MessageType = "browserRefs"
 	MsgTypeBrowserCursor                  MessageType = "browserCursor"
 	MsgTypeBrowserNavigation              MessageType = "browserNavigation"
 	MsgTypeBrowserAction                  MessageType = "browserAction"
@@ -103,14 +104,21 @@ const (
 	BrowserOwnerPaused   = "paused"
 	BrowserOwnerApproval = "approval"
 
-	BrowserInputKindClick       = "click"
-	BrowserInputKindPointerMove = "pointer_move"
-	BrowserInputKindPointerDown = "pointer_down"
-	BrowserInputKindPointerUp   = "pointer_up"
-	BrowserInputKindWheel       = "wheel"
-	BrowserInputKindKeyDown     = "key_down"
-	BrowserInputKindKeyUp       = "key_up"
-	BrowserInputKindText        = "text"
+	BrowserInputKindClick         = "click"
+	BrowserInputKindPointerMove   = "pointer_move"
+	BrowserInputKindPointerDown   = "pointer_down"
+	BrowserInputKindPointerUp     = "pointer_up"
+	BrowserInputKindWheel         = "wheel"
+	BrowserInputKindKeyDown       = "key_down"
+	BrowserInputKindKeyUp         = "key_up"
+	BrowserInputKindText          = "text"
+	BrowserInputKindNavigate      = "navigate"
+	BrowserInputKindBack          = "back"
+	BrowserInputKindForward       = "forward"
+	BrowserInputKindReload        = "reload"
+	BrowserInputKindRefAction     = "ref_action"
+	BrowserInputKindSetViewport   = "set_viewport"
+	BrowserInputKindEmulateDevice = "emulate_device"
 
 	BrowserCoordinateSpaceFrameCssPixels = "frame_css_pixels"
 
@@ -829,6 +837,27 @@ type BrowserFrame struct {
 	DevicePixelRatio  float64     `json:"devicePixelRatio,omitempty"`
 	CapturedAt        string      `json:"capturedAt"`
 	DroppedPriorCount int         `json:"droppedPriorCount,omitempty"`
+}
+
+type BrowserRefs struct {
+	Type       MessageType  `json:"type"`
+	BrowserID  string       `json:"browserId"`
+	SessionID  string       `json:"sessionId"`
+	ChannelID  string       `json:"channelId"`
+	Version    int          `json:"version"`
+	Refs       []BrowserRef `json:"refs"`
+	CapturedAt string       `json:"capturedAt"`
+}
+
+type BrowserRef struct {
+	Ref  string  `json:"ref"`
+	Key  string  `json:"key"`
+	Role string  `json:"role"`
+	Name string  `json:"name,omitempty"`
+	X    float64 `json:"x"`
+	Y    float64 `json:"y"`
+	W    float64 `json:"w"`
+	H    float64 `json:"h"`
 }
 
 type BrowserCursor struct {
