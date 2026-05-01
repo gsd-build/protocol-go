@@ -901,7 +901,7 @@ Browser support is advertised in `hello.capabilities`.
 
 ### Visual State
 
-`browserFrame` carries bounded screenshot frames. `browserCursor`, `browserNavigation`, and `browserAction` carry compact visible state and action metadata.
+`browserFrame` carries bounded screenshot frames. `browserRefs`, `browserCursor`, `browserNavigation`, and `browserAction` carry compact visible state and action metadata.
 
 #### `browserFrame`
 
@@ -922,6 +922,28 @@ Browser support is advertised in `hello.capabilities`.
 | devicePixelRatio | float64? |
 | capturedAt | iso8601 string |
 | droppedPriorCount | int? |
+
+#### `browserRefs`
+
+Sent daemon to browser clients for visible interactive browser references.
+
+| Field | Type | Notes |
+|---|---|---|
+| type | "browserRefs" | |
+| browserId | string | Active browser id. |
+| sessionId | uuid | Session id. |
+| channelId | string | Browser channel for the session. |
+| version | int | Numeric snapshot version. |
+| refs | BrowserRef[] | Visible element refs. |
+| refs[].ref | string | Rendered ref string such as `@v3:e1`. |
+| refs[].key | string | Snapshot key such as `e1`. |
+| refs[].role | string | Element role or tag. |
+| refs[].name | string? | Accessible label or visible name. |
+| refs[].x | float64 | CSS-pixel x coordinate in frame space. |
+| refs[].y | float64 | CSS-pixel y coordinate in frame space. |
+| refs[].w | float64 | CSS-pixel width in frame space. |
+| refs[].h | float64 | CSS-pixel height in frame space. |
+| capturedAt | iso8601 string | Capture time. |
 
 #### `browserCursor`
 

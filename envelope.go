@@ -199,6 +199,8 @@ func payloadForType(msgType string) (any, error) {
 		return &BrowserSessionError{}, nil
 	case MsgTypeBrowserFrame:
 		return &BrowserFrame{}, nil
+	case MsgTypeBrowserRefs:
+		return &BrowserRefs{}, nil
 	case MsgTypeBrowserCursor:
 		return &BrowserCursor{}, nil
 	case MsgTypeBrowserNavigation:
