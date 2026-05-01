@@ -58,6 +58,7 @@ Dispatch a user message to a session.
 | customInstructions | string? | Account-level instructions snapshotted onto this task. Updated daemons append this text to the Pi system prompt. |
 | disableSkills | boolean? | `true` disables Claude skill discovery and explicit skill file loading for the task. |
 | planCapability | PlanCapability? | Task-scoped bearer capability for Plan Mode tools. The daemon passes it to the Pi process as environment variables and never places it in the prompt. |
+| browserGrant | BrowserGrantContext? | Task-scoped browser grant context. Cloud creates the grant before dispatch; the daemon opens the local browser lazily on the first browser tool call. |
 
 `ContextRef`:
 
@@ -79,6 +80,18 @@ Dispatch a user message to a session.
 | apiBaseUrl | string | Cloud app base URL for `/api/agent-plan/*`. |
 | expiresAt | string | ISO timestamp. |
 | snapshot | object? | Capability metadata snapshot used by cloud-side authorization. |
+
+`BrowserGrantContext`:
+
+| Field | Type | Notes |
+|---|---|---|
+| grantId | string | Browser grant record identifier. |
+| projectId | uuid | Project that owns the grant. |
+| sessionId | uuid | Session that owns the grant. |
+| taskId | uuid | Task that owns the grant. |
+| channelId | string | Browser channel that receives lifecycle events. |
+| machineId | uuid | Daemon machine expected to consume the grant. |
+| expiresAt | iso8601 string | Grant expiry. |
 
 `TaskDeadlines`:
 
@@ -572,6 +585,17 @@ Daemon-to-browser lifecycle message for manual and automatic compaction.
 | previewWebSocketProtocols | boolean? | Daemon forwards requested WebSocket subprotocols. |
 | localServerDetection | boolean? | Daemon reports verified loopback web servers started by task tools. |
 | skills | boolean? | Daemon accepts `listSkills` and can pass explicit Claude skill files into Pi. |
+| browserRuntimeInstalled | boolean? | `gsd-browser` binary is present on the daemon machine. |
+| browserRuntimeVersion | string? | Installed `gsd-browser` version. |
+| browserRuntimeMinVersion | string? | Minimum runtime version required by the daemon. |
+| browserRuntimeMinVersionOk | boolean? | Installed runtime satisfies `browserRuntimeMinVersion`. |
+| browserRuntimePath | string? | Runtime binary path used by daemon probing and execution. |
+| browserRuntimeErrorCode | string? | Stable unavailable reason, e.g. `browser_not_installed`, `version_too_old`, `manifest_invalid`, or `chrome_missing`. |
+| browserRuntimeErrorMessage | string? | Human-readable unavailable reason. |
+| browserCloudMethodsVersion | int? | Cloud method manifest version reported by `gsd-browser cloud-methods --json`. |
+| browserChromeAvailable | boolean? | Chrome/Chromium is available to the runtime. |
+
+Old daemons omit browser runtime fields and browser lifecycle messages. Cloud treats omitted runtime fields as unknown or unavailable for ambient browser use.
 
 ### `welcome` (relay → daemon, response to hello)
 
@@ -830,6 +854,15 @@ Browser support is advertised in `hello.capabilities`.
 | browserIdentities | bool | Daemon can isolate browser state by identity scope and key. |
 | browserSensitiveActionApproval | bool | Daemon can pause browser tool execution for approval. |
 | browserMaxFrameBytes | int | Maximum encoded browser frame size the daemon can send. |
+| browserRuntimeInstalled | bool | `gsd-browser` binary is installed. |
+| browserRuntimeVersion | string | Installed `gsd-browser` version. |
+| browserRuntimeMinVersion | string | Minimum compatible runtime version. |
+| browserRuntimeMinVersionOk | bool | Installed runtime is compatible. |
+| browserRuntimePath | string | Runtime binary path. |
+| browserRuntimeErrorCode | string | Stable runtime unavailable code. |
+| browserRuntimeErrorMessage | string | Runtime unavailable detail. |
+| browserCloudMethodsVersion | int | Cloud method manifest version. |
+| browserChromeAvailable | bool | Chrome/Chromium is available. |
 
 ### Lifecycle
 
@@ -1135,7 +1168,7 @@ to the approved loopback target.
 
 ### Tool Calls
 
-`browserToolCall` and `browserToolResult` represent agent browser tool execution. The daemon validates active grant state before executing each call.
+`browserToolCall`, `browserToolCallStarted`, `browserToolCallUpdated`, `browserArtifactCreated`, and `browserToolResult` represent agent browser tool execution. The daemon validates active grant state before executing each call and sends only redacted safe result data to Cloud/model consumers.
 
 #### `browserToolCall`
 
@@ -1149,6 +1182,57 @@ to the approved loopback target.
 | method | string |
 | paramsJson | json? |
 
+#### `browserToolCallStarted`
+
+| Field | Type |
+|---|---|
+| type | "browserToolCallStarted" |
+| browserId | string? |
+| grantId | string? |
+| sessionId | uuid |
+| channelId | string |
+| taskId | uuid? |
+| toolUseId | string? |
+| method | string |
+| category | string? |
+| summary | string |
+| intent | string? |
+| metadata | json? |
+| at | iso8601 string |
+
+#### `browserToolCallUpdated`
+
+| Field | Type |
+|---|---|
+| type | "browserToolCallUpdated" |
+| browserId | string? |
+| grantId | string? |
+| sessionId | uuid |
+| channelId | string |
+| taskId | uuid? |
+| toolUseId | string? |
+| status | string |
+| summary | string? |
+| metadata | json? |
+| at | iso8601 string |
+
+#### `browserArtifactCreated`
+
+| Field | Type |
+|---|---|
+| type | "browserArtifactCreated" |
+| browserId | string |
+| grantId | string? |
+| sessionId | uuid |
+| channelId | string |
+| taskId | uuid? |
+| artifactId | string |
+| kind | string |
+| title | string? |
+| url | string? |
+| metadata | json? |
+| createdAt | iso8601 string |
+
 #### `browserToolResult`
 
 | Field | Type |
@@ -1156,11 +1240,18 @@ to the approved loopback target.
 | type | "browserToolResult" |
 | browserId | string |
 | grantId | string |
+| sessionId | uuid? |
+| channelId | string? |
 | taskId | uuid |
 | toolUseId | string |
 | ok | bool |
-| resultJson | json? |
+| resultJson | json? | Redacted safe result data only. |
 | error | string? |
+| errorCode | string? |
+| recoveryHint | string? |
+| sensitivity | string? |
+| redactionStatus | string? |
+| localArtifactPointer | string? |
 
 ### Sensitive Actions
 
