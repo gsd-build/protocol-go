@@ -12,6 +12,270 @@ func floatPtr(v float64) *float64 { return &v }
 func int64Ptr(v int64) *int64     { return &v }
 func intPtr(v int) *int           { return &v }
 
+func TestBrowserWorkbenchContractRoundTrip(t *testing.T) {
+	cases := []struct {
+		name string
+		msg  any
+	}{
+		{"control state", &BrowserControlState{
+			Type:           MsgTypeBrowserControlState,
+			BrowserID:      "browser_1",
+			SessionID:      "session_1",
+			ChannelID:      "channel_1",
+			Owner:          BrowserOwnerLex,
+			ControlVersion: 7,
+			Accepted:       true,
+			Reason:         "claimed",
+			At:             "2026-05-01T20:00:00Z",
+		}},
+		{"control claim request", &BrowserControlClaimRequest{
+			Type:        MsgTypeBrowserControlClaimRequest,
+			ClaimID:     "claim_1",
+			BrowserID:   "browser_1",
+			SessionID:   "session_1",
+			ChannelID:   "channel_1",
+			Owner:       BrowserOwnerLex,
+			RequestedBy: "user_1",
+			RequestedAt: "2026-05-01T20:00:00Z",
+		}},
+		{"claim and input", &BrowserClaimAndInput{
+			Type:      MsgTypeBrowserClaimAndInput,
+			ClaimID:   "claim_1",
+			BrowserID: "browser_1",
+			SessionID: "session_1",
+			ChannelID: "channel_1",
+			Input: BrowserUserInput{
+				InputID:         "input_1",
+				BrowserID:       "browser_1",
+				SessionID:       "session_1",
+				ChannelID:       "channel_1",
+				Owner:           BrowserOwnerLex,
+				Kind:            BrowserInputKindPointer,
+				Phase:           "click",
+				CoordinateSpace: BrowserInputCoordinateViewportCSS,
+			},
+		}},
+		{"evidence created", &BrowserEvidenceCreated{
+			Type:            MsgTypeBrowserEvidenceCreated,
+			EvidenceID:      "evidence_1",
+			BrowserID:       "browser_1",
+			SessionID:       "session_1",
+			ChannelID:       "channel_1",
+			Actor:           "daemon",
+			Status:          "succeeded",
+			EventType:       "navigation",
+			Summary:         "Opened GitHub",
+			RedactionStatus: "safe",
+			CreatedAt:       "2026-05-01T20:00:00Z",
+		}},
+		{"debug bundle created", &BrowserDebugBundleCreated{
+			Type:            MsgTypeBrowserDebugBundleCreated,
+			BundleID:        "bundle_1",
+			BrowserID:       "browser_1",
+			SessionID:       "session_1",
+			ChannelID:       "channel_1",
+			RedactionStatus: "local_only",
+			Residency:       "local_only",
+			CreatedAt:       "2026-05-01T20:00:00Z",
+		}},
+		{"identity available", &BrowserIdentityAvailable{
+			Type:          MsgTypeBrowserIdentityAvailable,
+			IdentityID:    "identity_1",
+			MachineID:     "machine_1",
+			IdentityScope: "project",
+			DisplayName:   "GitHub",
+			Status:        "available",
+		}},
+		{"identity saved", &BrowserIdentitySaved{
+			Type:          MsgTypeBrowserIdentitySaved,
+			IdentityID:    "identity_1",
+			MachineID:     "machine_1",
+			IdentityScope: "project",
+			IdentityKey:   "github",
+			DisplayName:   "GitHub",
+			SavedAt:       "2026-05-01T20:00:00Z",
+		}},
+		{"identity revoked", &BrowserIdentityRevoked{
+			Type:          MsgTypeBrowserIdentityRevoked,
+			IdentityID:    "identity_1",
+			MachineID:     "machine_1",
+			IdentityScope: "project",
+			IdentityKey:   "github",
+			RevokedAt:     "2026-05-01T20:00:00Z",
+			Acknowledged:  true,
+		}},
+		{"identity used", &BrowserIdentityUsed{
+			Type:       MsgTypeBrowserIdentityUsed,
+			IdentityID: "identity_1",
+			BrowserID:  "browser_1",
+			SessionID:  "session_1",
+			ChannelID:  "channel_1",
+			Origin:     "https://github.com",
+			UsedAt:     "2026-05-01T20:00:00Z",
+		}},
+		{"identity bind", &BrowserIdentityBind{
+			Type:          MsgTypeBrowserIdentityBind,
+			BindingID:     "binding_1",
+			IdentityID:    "identity_1",
+			MachineID:     "machine_1",
+			ProjectID:     "project_1",
+			OriginPattern: "https://github.com",
+			BoundBy:       "user_1",
+			BoundAt:       "2026-05-01T20:00:00Z",
+		}},
+		{"identity unbind", &BrowserIdentityUnbind{
+			Type:       MsgTypeBrowserIdentityUnbind,
+			BindingID:  "binding_1",
+			IdentityID: "identity_1",
+			MachineID:  "machine_1",
+			ProjectID:  "project_1",
+			RevokedBy:  "user_1",
+			RevokedAt:  "2026-05-01T20:00:00Z",
+		}},
+		{"identity use approved", &BrowserIdentityUseApproved{
+			Type:       MsgTypeBrowserIdentityUseApproved,
+			GrantID:    "grant_1",
+			IdentityID: "identity_1",
+			BrowserID:  "browser_1",
+			SessionID:  "session_1",
+			ChannelID:  "channel_1",
+			Origin:     "https://github.com",
+			ExpiresAt:  "2026-05-01T20:05:00Z",
+		}},
+		{"viewport set", &BrowserViewportSet{
+			Type:              MsgTypeBrowserViewportSet,
+			BrowserID:         "browser_1",
+			SessionID:         "session_1",
+			ChannelID:         "channel_1",
+			ViewportCSSWidth:  1280,
+			ViewportCSSHeight: 720,
+			DeviceScaleFactor: 2,
+			RequestedBy:       "user_1",
+			RequestedAt:       "2026-05-01T20:00:00Z",
+		}},
+		{"sensitive action request approval contract", &BrowserSensitiveActionRequest{
+			Type:                   MsgTypeBrowserSensitiveActionRequest,
+			BrowserID:              "browser_1",
+			RequestID:              "request_1",
+			SessionID:              "session_1",
+			ChannelID:              "channel_1",
+			TaskID:                 "task_1",
+			ApprovalID:             "approval_1",
+			Nonce:                  "nonce_1",
+			ActorUserID:            "user_1",
+			GrantID:                "grant_1",
+			ToolUseID:              "tool_1",
+			Method:                 "click",
+			Category:               "external_effect",
+			Summary:                "Submit form",
+			Origin:                 "https://github.com",
+			ParameterHash:          "sha256:abc",
+			ExpectedExternalEffect: "submit",
+			Sensitivity:            "high",
+			ExpiresAt:              "2026-05-01T20:05:00Z",
+		}},
+		{"sensitive action response approval contract", &BrowserSensitiveActionResponse{
+			Type:                   MsgTypeBrowserSensitiveActionResponse,
+			BrowserID:              "browser_1",
+			RequestID:              "request_1",
+			SessionID:              "session_1",
+			ChannelID:              "channel_1",
+			ApprovalID:             "approval_1",
+			Nonce:                  "nonce_1",
+			ActorUserID:            "user_1",
+			GrantID:                "grant_1",
+			ToolUseID:              "tool_1",
+			Method:                 "click",
+			Category:               "external_effect",
+			Origin:                 "https://github.com",
+			ParameterHash:          "sha256:abc",
+			ExpectedExternalEffect: "submit",
+			Sensitivity:            "high",
+			ExpiresAt:              "2026-05-01T20:05:00Z",
+			Approved:               false,
+			DeniedReason:           "not now",
+		}},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			raw, err := json.Marshal(tc.msg)
+			if err != nil {
+				t.Fatal(err)
+			}
+			env, err := ParseEnvelope(raw)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !jsonEqual(mustJSONMap(t, tc.msg), mustJSONMap(t, env.Payload)) {
+				t.Fatalf("payload mismatch: want %#v, got %#v", tc.msg, env.Payload)
+			}
+		})
+	}
+}
+
+func TestBrowserUserInputAckCarriesReasonCode(t *testing.T) {
+	msg := &BrowserUserInputAck{
+		Type:             MsgTypeBrowserUserInputAck,
+		BrowserID:        "browser_1",
+		SessionID:        "session_1",
+		ChannelID:        "channel_1",
+		InputID:          "input_1",
+		Kind:             BrowserInputKindPointer,
+		Phase:            "click",
+		Accepted:         false,
+		FrameSeq:         10,
+		AcceptedFrameSeq: 12,
+		ReasonCode:       BrowserInputRejectStaleFrame,
+		SafeRetry:        true,
+		Message:          "Frame stale, refresh pending",
+		ControlVersion:   3,
+		AckedAt:          "2026-05-01T20:00:00Z",
+	}
+	raw, err := json.Marshal(msg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	env, err := ParseEnvelope(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := env.Payload.(*BrowserUserInputAck)
+	if got.ReasonCode != BrowserInputRejectStaleFrame || !got.SafeRetry {
+		t.Fatalf("decoded = %#v", got)
+	}
+}
+
+func TestBrowserSensitiveApprovalValidation(t *testing.T) {
+	valid := BrowserSensitiveActionRequest{
+		ApprovalID:    "approval_1",
+		Nonce:         "nonce_1",
+		ParameterHash: "sha256:abc",
+		ExpiresAt:     "2026-05-01T20:05:00Z",
+	}
+	if err := valid.ValidateApprovalFields(); err != nil {
+		t.Fatalf("valid approval fields: %v", err)
+	}
+
+	for _, tc := range []struct {
+		name string
+		mut  func(*BrowserSensitiveActionRequest)
+	}{
+		{"approval id", func(v *BrowserSensitiveActionRequest) { v.ApprovalID = "" }},
+		{"nonce", func(v *BrowserSensitiveActionRequest) { v.Nonce = "" }},
+		{"parameter hash", func(v *BrowserSensitiveActionRequest) { v.ParameterHash = "" }},
+		{"expires at", func(v *BrowserSensitiveActionRequest) { v.ExpiresAt = "" }},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			msg := valid
+			tc.mut(&msg)
+			if err := msg.ValidateApprovalFields(); err == nil {
+				t.Fatal("expected validation error")
+			}
+		})
+	}
+}
+
 func TestEnvelopeRoundTrip(t *testing.T) {
 	cases := []struct {
 		name string

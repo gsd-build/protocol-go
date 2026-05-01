@@ -221,6 +221,12 @@ func payloadForType(msgType string) (any, error) {
 		return &BrowserControlClaim{}, nil
 	case MsgTypeBrowserControlRelease:
 		return &BrowserControlRelease{}, nil
+	case MsgTypeBrowserControlState:
+		return &BrowserControlState{}, nil
+	case MsgTypeBrowserControlClaimRequest:
+		return &BrowserControlClaimRequest{}, nil
+	case MsgTypeBrowserClaimAndInput:
+		return &BrowserClaimAndInput{}, nil
 	case MsgTypeBrowserUserInput:
 		return &BrowserUserInput{}, nil
 	case MsgTypeBrowserUserInputAck:
@@ -237,6 +243,26 @@ func payloadForType(msgType string) (any, error) {
 		return &BrowserSensitiveActionRequest{}, nil
 	case MsgTypeBrowserSensitiveActionResponse:
 		return &BrowserSensitiveActionResponse{}, nil
+	case MsgTypeBrowserEvidenceCreated:
+		return &BrowserEvidenceCreated{}, nil
+	case MsgTypeBrowserDebugBundleCreated:
+		return &BrowserDebugBundleCreated{}, nil
+	case MsgTypeBrowserIdentityAvailable:
+		return &BrowserIdentityAvailable{}, nil
+	case MsgTypeBrowserIdentitySaved:
+		return &BrowserIdentitySaved{}, nil
+	case MsgTypeBrowserIdentityRevoked:
+		return &BrowserIdentityRevoked{}, nil
+	case MsgTypeBrowserIdentityUsed:
+		return &BrowserIdentityUsed{}, nil
+	case MsgTypeBrowserIdentityBind:
+		return &BrowserIdentityBind{}, nil
+	case MsgTypeBrowserIdentityUnbind:
+		return &BrowserIdentityUnbind{}, nil
+	case MsgTypeBrowserIdentityUseApproved:
+		return &BrowserIdentityUseApproved{}, nil
+	case MsgTypeBrowserViewportSet:
+		return &BrowserViewportSet{}, nil
 	case MsgTypePlanningEvent:
 		return &PlanningEvent{}, nil
 	case MsgTypePlanningEventAck:
