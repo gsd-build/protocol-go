@@ -5,6 +5,7 @@ package protocol
 
 import (
 	"encoding/json"
+	"fmt"
 	"time"
 )
 
@@ -88,6 +89,9 @@ const (
 	MsgTypeBrowserArtifactCreated         MessageType = "browserArtifactCreated"
 	MsgTypeBrowserControlClaim            MessageType = "browserControlClaim"
 	MsgTypeBrowserControlRelease          MessageType = "browserControlRelease"
+	MsgTypeBrowserControlState            MessageType = "browserControlState"
+	MsgTypeBrowserControlClaimRequest     MessageType = "browserControlClaimRequest"
+	MsgTypeBrowserClaimAndInput           MessageType = "browserClaimAndInput"
 	MsgTypeBrowserUserInput               MessageType = "browserUserInput"
 	MsgTypeBrowserUserInputAck            MessageType = "browserUserInputAck"
 	MsgTypeBrowserTransportStatus         MessageType = "browserTransportStatus"
@@ -96,6 +100,16 @@ const (
 	MsgTypeBrowserBridgeAccessClose       MessageType = "browserBridgeAccessClose"
 	MsgTypeBrowserSensitiveActionRequest  MessageType = "browserSensitiveActionRequest"
 	MsgTypeBrowserSensitiveActionResponse MessageType = "browserSensitiveActionResponse"
+	MsgTypeBrowserEvidenceCreated         MessageType = "browserEvidenceCreated"
+	MsgTypeBrowserDebugBundleCreated      MessageType = "browserDebugBundleCreated"
+	MsgTypeBrowserIdentityAvailable       MessageType = "browserIdentityAvailable"
+	MsgTypeBrowserIdentitySaved           MessageType = "browserIdentitySaved"
+	MsgTypeBrowserIdentityRevoked         MessageType = "browserIdentityRevoked"
+	MsgTypeBrowserIdentityUsed            MessageType = "browserIdentityUsed"
+	MsgTypeBrowserIdentityBind            MessageType = "browserIdentityBind"
+	MsgTypeBrowserIdentityUnbind          MessageType = "browserIdentityUnbind"
+	MsgTypeBrowserIdentityUseApproved     MessageType = "browserIdentityUseApproved"
+	MsgTypeBrowserViewportSet             MessageType = "browserViewportSet"
 
 	MsgTypePlanningEvent    MessageType = "planningEvent"
 	MsgTypePlanningEventAck MessageType = "planningEventAck"
@@ -106,6 +120,13 @@ const (
 	BrowserOwnerLex      = "lex"
 	BrowserOwnerPaused   = "paused"
 	BrowserOwnerApproval = "approval"
+
+	BrowserInputKindPointer     = "pointer"
+	BrowserInputKindKey         = "key"
+	BrowserInputKindPaste       = "paste"
+	BrowserInputKindComposition = "composition"
+	BrowserInputKindNavigation  = "navigation"
+	BrowserInputKindViewport    = "viewport"
 
 	BrowserInputKindClick         = "click"
 	BrowserInputKindPointerMove   = "pointer_move"
@@ -123,12 +144,17 @@ const (
 	BrowserInputKindSetViewport   = "set_viewport"
 	BrowserInputKindEmulateDevice = "emulate_device"
 
+	BrowserInputCoordinateViewportCSS = "viewport_css"
+
 	BrowserCoordinateSpaceFrameCssPixels = "frame_css_pixels"
 
-	BrowserInputRejectStaleFrame     = "stale_frame"
-	BrowserInputRejectOwnerMismatch  = "owner_mismatch"
-	BrowserInputRejectExpiredGrant   = "expired_grant"
-	BrowserInputRejectInvalidPayload = "invalid_payload"
+	BrowserInputRejectStaleControlVersion = "stale_control_version"
+	BrowserInputRejectStaleFrame          = "stale_frame"
+	BrowserInputRejectOwnerMismatch       = "not_owner"
+	BrowserInputRejectInvalidPayload      = "invalid_payload"
+	BrowserInputRejectBlockedByApproval   = "blocked_by_approval"
+	BrowserInputRejectBrowserUnavailable  = "browser_unavailable"
+	BrowserInputRejectExpiredGrant        = "grant_expired"
 )
 
 type ContextRef struct {
@@ -779,20 +805,24 @@ type AgentTerminalSnapshotRequest struct {
 }
 
 type BrowserSessionOpen struct {
-	Type       MessageType `json:"type"`
-	RequestID  string      `json:"requestId"`
-	GrantID    string      `json:"grantId"`
-	SessionID  string      `json:"sessionId"`
-	ProjectID  string      `json:"projectId"`
-	TaskID     string      `json:"taskId"`
-	ChannelID  string      `json:"channelId"`
-	MachineID  string      `json:"machineId"`
-	IdentityID string      `json:"identityId,omitempty"`
-	Mode       string      `json:"mode"`
-	InitialURL string      `json:"initialUrl,omitempty"`
-	BridgeMode string      `json:"bridgeMode,omitempty"`
-	PreviewID  string      `json:"sourcePreviewId,omitempty"`
-	ExpiresAt  string      `json:"expiresAt"`
+	Type              MessageType `json:"type"`
+	RequestID         string      `json:"requestId"`
+	GrantID           string      `json:"grantId"`
+	SessionID         string      `json:"sessionId"`
+	ProjectID         string      `json:"projectId"`
+	TaskID            string      `json:"taskId"`
+	ChannelID         string      `json:"channelId"`
+	MachineID         string      `json:"machineId"`
+	IdentityID        string      `json:"identityId,omitempty"`
+	IdentityScope     string      `json:"identityScope,omitempty"`
+	IdentityKey       string      `json:"identityKey,omitempty"`
+	IdentityProjectID string      `json:"identityProjectId,omitempty"`
+	IdentitySessionID string      `json:"identitySessionId,omitempty"`
+	Mode              string      `json:"mode"`
+	InitialURL        string      `json:"initialUrl,omitempty"`
+	BridgeMode        string      `json:"bridgeMode,omitempty"`
+	PreviewID         string      `json:"sourcePreviewId,omitempty"`
+	ExpiresAt         string      `json:"expiresAt"`
 }
 
 type BrowserSessionOpened struct {
@@ -836,21 +866,32 @@ type BrowserSessionError struct {
 }
 
 type BrowserFrame struct {
-	Type              MessageType `json:"type"`
-	BrowserID         string      `json:"browserId"`
-	SessionID         string      `json:"sessionId"`
-	ChannelID         string      `json:"channelId"`
-	Seq               int64       `json:"seq"`
-	ContentType       string      `json:"contentType"`
-	DataBase64        string      `json:"dataBase64,omitempty"`
-	FrameRef          string      `json:"frameRef,omitempty"`
-	Width             int         `json:"width"`
-	Height            int         `json:"height"`
-	ViewportWidth     int         `json:"viewportWidth,omitempty"`
-	ViewportHeight    int         `json:"viewportHeight,omitempty"`
-	DevicePixelRatio  float64     `json:"devicePixelRatio,omitempty"`
-	CapturedAt        string      `json:"capturedAt"`
-	DroppedPriorCount int         `json:"droppedPriorCount,omitempty"`
+	Type                   MessageType `json:"type"`
+	BrowserID              string      `json:"browserId"`
+	SessionID              string      `json:"sessionId"`
+	ChannelID              string      `json:"channelId"`
+	Seq                    int64       `json:"seq"`
+	ContentType            string      `json:"contentType"`
+	DataBase64             string      `json:"dataBase64,omitempty"`
+	FrameRef               string      `json:"frameRef,omitempty"`
+	Width                  int         `json:"width"`
+	Height                 int         `json:"height"`
+	ViewportWidth          int         `json:"viewportWidth,omitempty"`
+	ViewportHeight         int         `json:"viewportHeight,omitempty"`
+	ViewportCSSWidth       int         `json:"viewportCssWidth,omitempty"`
+	ViewportCSSHeight      int         `json:"viewportCssHeight,omitempty"`
+	CapturePixelWidth      int         `json:"capturePixelWidth,omitempty"`
+	CapturePixelHeight     int         `json:"capturePixelHeight,omitempty"`
+	DevicePixelRatio       float64     `json:"devicePixelRatio,omitempty"`
+	CaptureScaleX          float64     `json:"captureScaleX,omitempty"`
+	CaptureScaleY          float64     `json:"captureScaleY,omitempty"`
+	EncodedBytes           int         `json:"encodedBytes,omitempty"`
+	Quality                int         `json:"quality,omitempty"`
+	CapturePixelRatio      float64     `json:"capturePixelRatio,omitempty"`
+	LatencyMS              int64       `json:"latencyMs,omitempty"`
+	LatestAcceptedFrameSeq int64       `json:"latestAcceptedFrameSeq,omitempty"`
+	CapturedAt             string      `json:"capturedAt"`
+	DroppedPriorCount      int         `json:"droppedPriorCount,omitempty"`
 }
 
 type BrowserRefs struct {
@@ -968,18 +1009,22 @@ type BrowserToolCallUpdated struct {
 }
 
 type BrowserArtifactCreated struct {
-	Type       MessageType     `json:"type"`
-	BrowserID  string          `json:"browserId"`
-	GrantID    string          `json:"grantId,omitempty"`
-	SessionID  string          `json:"sessionId"`
-	ChannelID  string          `json:"channelId"`
-	TaskID     string          `json:"taskId,omitempty"`
-	ArtifactID string          `json:"artifactId"`
-	Kind       string          `json:"kind"`
-	Title      string          `json:"title,omitempty"`
-	URL        string          `json:"url,omitempty"`
-	Metadata   json.RawMessage `json:"metadata,omitempty"`
-	CreatedAt  string          `json:"createdAt"`
+	Type                 MessageType     `json:"type"`
+	BrowserID            string          `json:"browserId"`
+	GrantID              string          `json:"grantId,omitempty"`
+	SessionID            string          `json:"sessionId"`
+	ChannelID            string          `json:"channelId"`
+	TaskID               string          `json:"taskId,omitempty"`
+	ArtifactID           string          `json:"artifactId"`
+	Kind                 string          `json:"kind"`
+	Title                string          `json:"title,omitempty"`
+	URL                  string          `json:"url,omitempty"`
+	Residency            string          `json:"residency,omitempty"`
+	RedactionStatus      string          `json:"redactionStatus,omitempty"`
+	LocalArtifactPointer string          `json:"localArtifactPointer,omitempty"`
+	CloudPreviewURL      string          `json:"cloudPreviewUrl,omitempty"`
+	Metadata             json.RawMessage `json:"metadata,omitempty"`
+	CreatedAt            string          `json:"createdAt"`
 }
 
 type BrowserControlClaim struct {
@@ -1002,6 +1047,41 @@ type BrowserControlRelease struct {
 	ControlVersion int64       `json:"controlVersion,omitempty"`
 }
 
+type BrowserControlState struct {
+	Type           MessageType     `json:"type"`
+	BrowserID      string          `json:"browserId"`
+	SessionID      string          `json:"sessionId"`
+	ChannelID      string          `json:"channelId"`
+	Owner          string          `json:"owner"`
+	ControlVersion int64           `json:"controlVersion"`
+	Accepted       bool            `json:"accepted"`
+	Reason         string          `json:"reason,omitempty"`
+	At             string          `json:"at"`
+	Metadata       json.RawMessage `json:"metadata,omitempty"`
+}
+
+type BrowserControlClaimRequest struct {
+	Type        MessageType     `json:"type"`
+	ClaimID     string          `json:"claimId"`
+	BrowserID   string          `json:"browserId"`
+	SessionID   string          `json:"sessionId"`
+	ChannelID   string          `json:"channelId"`
+	Owner       string          `json:"owner"`
+	RequestedBy string          `json:"requestedBy"`
+	RequestedAt string          `json:"requestedAt"`
+	Reason      string          `json:"reason,omitempty"`
+	Metadata    json.RawMessage `json:"metadata,omitempty"`
+}
+
+type BrowserClaimAndInput struct {
+	Type      MessageType      `json:"type"`
+	ClaimID   string           `json:"claimId"`
+	BrowserID string           `json:"browserId"`
+	SessionID string           `json:"sessionId"`
+	ChannelID string           `json:"channelId"`
+	Input     BrowserUserInput `json:"input"`
+}
+
 type BrowserUserInput struct {
 	Type             MessageType `json:"type"`
 	InputID          string      `json:"inputId,omitempty"`
@@ -1010,12 +1090,26 @@ type BrowserUserInput struct {
 	ChannelID        string      `json:"channelId"`
 	Owner            string      `json:"owner"`
 	Kind             string      `json:"kind"`
+	Phase            string      `json:"phase,omitempty"`
+	Button           string      `json:"button,omitempty"`
+	Buttons          int         `json:"buttons,omitempty"`
+	ClickCount       int         `json:"clickCount,omitempty"`
+	PointerType      string      `json:"pointerType,omitempty"`
+	Modifiers        []string    `json:"modifiers,omitempty"`
 	X                *float64    `json:"x,omitempty"`
 	Y                *float64    `json:"y,omitempty"`
 	Text             string      `json:"text,omitempty"`
 	Key              string      `json:"key,omitempty"`
+	Code             string      `json:"code,omitempty"`
+	Location         int         `json:"location,omitempty"`
+	Repeat           bool        `json:"repeat,omitempty"`
+	CommitMode       string      `json:"commitMode,omitempty"`
+	MimeTypes        []string    `json:"mimeTypes,omitempty"`
 	DeltaX           *float64    `json:"deltaX,omitempty"`
 	DeltaY           *float64    `json:"deltaY,omitempty"`
+	URL              string      `json:"url,omitempty"`
+	Action           string      `json:"action,omitempty"`
+	CapturedAt       string      `json:"capturedAt,omitempty"`
 	FrameSeq         int64       `json:"frameSeq,omitempty"`
 	ControlVersion   int64       `json:"controlVersion,omitempty"`
 	CoordinateSpace  string      `json:"coordinateSpace,omitempty"`
@@ -1031,15 +1125,22 @@ type BrowserUserInput struct {
 }
 
 type BrowserUserInputAck struct {
-	Type           MessageType `json:"type"`
-	BrowserID      string      `json:"browserId"`
-	SessionID      string      `json:"sessionId"`
-	ChannelID      string      `json:"channelId"`
-	InputID        string      `json:"inputId,omitempty"`
-	Accepted       bool        `json:"accepted"`
-	Reason         string      `json:"reason,omitempty"`
-	ControlVersion int64       `json:"controlVersion,omitempty"`
-	AckedAt        string      `json:"ackedAt"`
+	Type             MessageType `json:"type"`
+	BrowserID        string      `json:"browserId"`
+	SessionID        string      `json:"sessionId"`
+	ChannelID        string      `json:"channelId"`
+	InputID          string      `json:"inputId,omitempty"`
+	Kind             string      `json:"kind,omitempty"`
+	Phase            string      `json:"phase,omitempty"`
+	Accepted         bool        `json:"accepted"`
+	FrameSeq         int64       `json:"frameSeq,omitempty"`
+	AcceptedFrameSeq int64       `json:"acceptedFrameSeq,omitempty"`
+	ReasonCode       string      `json:"reasonCode,omitempty"`
+	SafeRetry        bool        `json:"safeRetry,omitempty"`
+	Message          string      `json:"message,omitempty"`
+	Reason           string      `json:"reason,omitempty"`
+	ControlVersion   int64       `json:"controlVersion,omitempty"`
+	AckedAt          string      `json:"ackedAt"`
 }
 
 type BrowserTransportStatus struct {
@@ -1091,27 +1192,188 @@ type BrowserBridgeAccessClose struct {
 }
 
 type BrowserSensitiveActionRequest struct {
-	Type      MessageType `json:"type"`
-	BrowserID string      `json:"browserId"`
-	RequestID string      `json:"requestId"`
-	SessionID string      `json:"sessionId"`
-	ChannelID string      `json:"channelId"`
-	TaskID    string      `json:"taskId"`
-	ToolUseID string      `json:"toolUseId"`
-	Category  string      `json:"category"`
-	Summary   string      `json:"summary"`
-	Origin    string      `json:"origin,omitempty"`
-	ExpiresAt string      `json:"expiresAt"`
+	Type                   MessageType `json:"type"`
+	BrowserID              string      `json:"browserId"`
+	RequestID              string      `json:"requestId"`
+	SessionID              string      `json:"sessionId"`
+	ChannelID              string      `json:"channelId"`
+	TaskID                 string      `json:"taskId"`
+	ApprovalID             string      `json:"approvalId"`
+	Nonce                  string      `json:"nonce"`
+	ActorUserID            string      `json:"actorUserId"`
+	GrantID                string      `json:"grantId"`
+	ToolUseID              string      `json:"toolUseId"`
+	Method                 string      `json:"method"`
+	Category               string      `json:"category"`
+	Summary                string      `json:"summary"`
+	Origin                 string      `json:"origin,omitempty"`
+	ParameterHash          string      `json:"parameterHash"`
+	ExpectedExternalEffect string      `json:"expectedExternalEffect"`
+	Sensitivity            string      `json:"sensitivity"`
+	ExpiresAt              string      `json:"expiresAt"`
 }
 
 type BrowserSensitiveActionResponse struct {
-	Type      MessageType `json:"type"`
-	BrowserID string      `json:"browserId"`
-	RequestID string      `json:"requestId"`
-	SessionID string      `json:"sessionId"`
-	ChannelID string      `json:"channelId"`
-	Approved  bool        `json:"approved"`
-	Reason    string      `json:"reason,omitempty"`
+	Type                   MessageType `json:"type"`
+	BrowserID              string      `json:"browserId"`
+	RequestID              string      `json:"requestId"`
+	SessionID              string      `json:"sessionId"`
+	ChannelID              string      `json:"channelId"`
+	ApprovalID             string      `json:"approvalId"`
+	Nonce                  string      `json:"nonce"`
+	ActorUserID            string      `json:"actorUserId"`
+	GrantID                string      `json:"grantId"`
+	ToolUseID              string      `json:"toolUseId"`
+	Method                 string      `json:"method"`
+	Category               string      `json:"category"`
+	Origin                 string      `json:"origin,omitempty"`
+	ParameterHash          string      `json:"parameterHash"`
+	ExpectedExternalEffect string      `json:"expectedExternalEffect"`
+	Sensitivity            string      `json:"sensitivity"`
+	ExpiresAt              string      `json:"expiresAt"`
+	Approved               bool        `json:"approved"`
+	DeniedReason           string      `json:"deniedReason,omitempty"`
+	Reason                 string      `json:"reason,omitempty"`
+}
+
+func (m BrowserSensitiveActionRequest) ValidateApprovalFields() error {
+	return validateBrowserApprovalFields(m.ApprovalID, m.Nonce, m.ParameterHash, m.ExpiresAt)
+}
+
+func (m BrowserSensitiveActionResponse) ValidateApprovalFields() error {
+	return validateBrowserApprovalFields(m.ApprovalID, m.Nonce, m.ParameterHash, m.ExpiresAt)
+}
+
+func validateBrowserApprovalFields(approvalID, nonce, parameterHash, expiresAt string) error {
+	switch {
+	case approvalID == "":
+		return fmt.Errorf("approvalId is required")
+	case nonce == "":
+		return fmt.Errorf("nonce is required")
+	case parameterHash == "":
+		return fmt.Errorf("parameterHash is required")
+	case expiresAt == "":
+		return fmt.Errorf("expiresAt is required")
+	default:
+		return nil
+	}
+}
+
+type BrowserEvidenceCreated struct {
+	Type            MessageType     `json:"type"`
+	EvidenceID      string          `json:"evidenceId"`
+	BrowserID       string          `json:"browserId"`
+	SessionID       string          `json:"sessionId"`
+	ChannelID       string          `json:"channelId"`
+	TaskID          string          `json:"taskId,omitempty"`
+	ToolUseID       string          `json:"toolUseId,omitempty"`
+	Actor           string          `json:"actor"`
+	Status          string          `json:"status"`
+	EventType       string          `json:"eventType"`
+	Summary         string          `json:"summary"`
+	Origin          string          `json:"origin,omitempty"`
+	RedactionStatus string          `json:"redactionStatus"`
+	Metadata        json.RawMessage `json:"metadata,omitempty"`
+	CreatedAt       string          `json:"createdAt"`
+}
+
+type BrowserDebugBundleCreated struct {
+	Type                 MessageType     `json:"type"`
+	BundleID             string          `json:"bundleId"`
+	BrowserID            string          `json:"browserId"`
+	SessionID            string          `json:"sessionId"`
+	ChannelID            string          `json:"channelId"`
+	RedactionStatus      string          `json:"redactionStatus"`
+	Residency            string          `json:"residency"`
+	LocalArtifactPointer string          `json:"localArtifactPointer,omitempty"`
+	Metadata             json.RawMessage `json:"metadata,omitempty"`
+	CreatedAt            string          `json:"createdAt"`
+}
+
+type BrowserIdentityAvailable struct {
+	Type          MessageType     `json:"type"`
+	IdentityID    string          `json:"identityId"`
+	MachineID     string          `json:"machineId"`
+	IdentityScope string          `json:"identityScope"`
+	DisplayName   string          `json:"displayName"`
+	Status        string          `json:"status"`
+	Metadata      json.RawMessage `json:"metadata,omitempty"`
+}
+
+type BrowserIdentitySaved struct {
+	Type          MessageType `json:"type"`
+	IdentityID    string      `json:"identityId"`
+	MachineID     string      `json:"machineId"`
+	IdentityScope string      `json:"identityScope"`
+	IdentityKey   string      `json:"identityKey"`
+	DisplayName   string      `json:"displayName"`
+	SavedAt       string      `json:"savedAt"`
+}
+
+type BrowserIdentityRevoked struct {
+	Type          MessageType `json:"type"`
+	IdentityID    string      `json:"identityId"`
+	MachineID     string      `json:"machineId"`
+	IdentityScope string      `json:"identityScope"`
+	IdentityKey   string      `json:"identityKey"`
+	RevokedAt     string      `json:"revokedAt"`
+	Acknowledged  bool        `json:"acknowledged"`
+}
+
+type BrowserIdentityUsed struct {
+	Type       MessageType `json:"type"`
+	IdentityID string      `json:"identityId"`
+	BrowserID  string      `json:"browserId"`
+	SessionID  string      `json:"sessionId"`
+	ChannelID  string      `json:"channelId"`
+	Origin     string      `json:"origin"`
+	UsedAt     string      `json:"usedAt"`
+}
+
+type BrowserIdentityBind struct {
+	Type          MessageType `json:"type"`
+	BindingID     string      `json:"bindingId"`
+	IdentityID    string      `json:"identityId"`
+	MachineID     string      `json:"machineId"`
+	ProjectID     string      `json:"projectId"`
+	SessionID     string      `json:"sessionId,omitempty"`
+	OriginPattern string      `json:"originPattern"`
+	BoundBy       string      `json:"boundBy"`
+	BoundAt       string      `json:"boundAt"`
+}
+
+type BrowserIdentityUnbind struct {
+	Type       MessageType `json:"type"`
+	BindingID  string      `json:"bindingId"`
+	IdentityID string      `json:"identityId"`
+	MachineID  string      `json:"machineId"`
+	ProjectID  string      `json:"projectId"`
+	SessionID  string      `json:"sessionId,omitempty"`
+	RevokedBy  string      `json:"revokedBy"`
+	RevokedAt  string      `json:"revokedAt"`
+}
+
+type BrowserIdentityUseApproved struct {
+	Type       MessageType `json:"type"`
+	GrantID    string      `json:"grantId"`
+	IdentityID string      `json:"identityId"`
+	BrowserID  string      `json:"browserId"`
+	SessionID  string      `json:"sessionId"`
+	ChannelID  string      `json:"channelId"`
+	Origin     string      `json:"origin"`
+	ExpiresAt  string      `json:"expiresAt"`
+}
+
+type BrowserViewportSet struct {
+	Type              MessageType `json:"type"`
+	BrowserID         string      `json:"browserId"`
+	SessionID         string      `json:"sessionId"`
+	ChannelID         string      `json:"channelId"`
+	ViewportCSSWidth  int         `json:"viewportCssWidth"`
+	ViewportCSSHeight int         `json:"viewportCssHeight"`
+	DeviceScaleFactor float64     `json:"deviceScaleFactor"`
+	RequestedBy       string      `json:"requestedBy"`
+	RequestedAt       string      `json:"requestedAt"`
 }
 
 // HelloCapabilities describes optional daemon protocol support.

@@ -12,6 +12,377 @@ func floatPtr(v float64) *float64 { return &v }
 func int64Ptr(v int64) *int64     { return &v }
 func intPtr(v int) *int           { return &v }
 
+func TestBrowserWorkbenchContractRoundTrip(t *testing.T) {
+	cases := []struct {
+		name string
+		msg  any
+	}{
+		{"control state", &BrowserControlState{
+			Type:           MsgTypeBrowserControlState,
+			BrowserID:      "browser_1",
+			SessionID:      "session_1",
+			ChannelID:      "channel_1",
+			Owner:          BrowserOwnerLex,
+			ControlVersion: 7,
+			Accepted:       true,
+			Reason:         "claimed",
+			At:             "2026-05-01T20:00:00Z",
+		}},
+		{"control claim request", &BrowserControlClaimRequest{
+			Type:        MsgTypeBrowserControlClaimRequest,
+			ClaimID:     "claim_1",
+			BrowserID:   "browser_1",
+			SessionID:   "session_1",
+			ChannelID:   "channel_1",
+			Owner:       BrowserOwnerLex,
+			RequestedBy: "user_1",
+			RequestedAt: "2026-05-01T20:00:00Z",
+		}},
+		{"claim and input", &BrowserClaimAndInput{
+			Type:      MsgTypeBrowserClaimAndInput,
+			ClaimID:   "claim_1",
+			BrowserID: "browser_1",
+			SessionID: "session_1",
+			ChannelID: "channel_1",
+			Input: BrowserUserInput{
+				InputID:         "input_1",
+				BrowserID:       "browser_1",
+				SessionID:       "session_1",
+				ChannelID:       "channel_1",
+				Owner:           BrowserOwnerLex,
+				Kind:            BrowserInputKindPointer,
+				Phase:           "click",
+				CoordinateSpace: BrowserInputCoordinateViewportCSS,
+			},
+		}},
+		{"evidence created", &BrowserEvidenceCreated{
+			Type:            MsgTypeBrowserEvidenceCreated,
+			EvidenceID:      "evidence_1",
+			BrowserID:       "browser_1",
+			SessionID:       "session_1",
+			ChannelID:       "channel_1",
+			Actor:           "daemon",
+			Status:          "succeeded",
+			EventType:       "navigation",
+			Summary:         "Opened GitHub",
+			RedactionStatus: "safe",
+			CreatedAt:       "2026-05-01T20:00:00Z",
+		}},
+		{"debug bundle created", &BrowserDebugBundleCreated{
+			Type:            MsgTypeBrowserDebugBundleCreated,
+			BundleID:        "bundle_1",
+			BrowserID:       "browser_1",
+			SessionID:       "session_1",
+			ChannelID:       "channel_1",
+			RedactionStatus: "local_only",
+			Residency:       "local_only",
+			CreatedAt:       "2026-05-01T20:00:00Z",
+		}},
+		{"identity available", &BrowserIdentityAvailable{
+			Type:          MsgTypeBrowserIdentityAvailable,
+			IdentityID:    "identity_1",
+			MachineID:     "machine_1",
+			IdentityScope: "project",
+			DisplayName:   "GitHub",
+			Status:        "available",
+		}},
+		{"identity saved", &BrowserIdentitySaved{
+			Type:          MsgTypeBrowserIdentitySaved,
+			IdentityID:    "identity_1",
+			MachineID:     "machine_1",
+			IdentityScope: "project",
+			IdentityKey:   "github",
+			DisplayName:   "GitHub",
+			SavedAt:       "2026-05-01T20:00:00Z",
+		}},
+		{"identity revoked", &BrowserIdentityRevoked{
+			Type:          MsgTypeBrowserIdentityRevoked,
+			IdentityID:    "identity_1",
+			MachineID:     "machine_1",
+			IdentityScope: "project",
+			IdentityKey:   "github",
+			RevokedAt:     "2026-05-01T20:00:00Z",
+			Acknowledged:  true,
+		}},
+		{"identity used", &BrowserIdentityUsed{
+			Type:       MsgTypeBrowserIdentityUsed,
+			IdentityID: "identity_1",
+			BrowserID:  "browser_1",
+			SessionID:  "session_1",
+			ChannelID:  "channel_1",
+			Origin:     "https://github.com",
+			UsedAt:     "2026-05-01T20:00:00Z",
+		}},
+		{"identity bind", &BrowserIdentityBind{
+			Type:          MsgTypeBrowserIdentityBind,
+			BindingID:     "binding_1",
+			IdentityID:    "identity_1",
+			MachineID:     "machine_1",
+			ProjectID:     "project_1",
+			OriginPattern: "https://github.com",
+			BoundBy:       "user_1",
+			BoundAt:       "2026-05-01T20:00:00Z",
+		}},
+		{"identity unbind", &BrowserIdentityUnbind{
+			Type:       MsgTypeBrowserIdentityUnbind,
+			BindingID:  "binding_1",
+			IdentityID: "identity_1",
+			MachineID:  "machine_1",
+			ProjectID:  "project_1",
+			RevokedBy:  "user_1",
+			RevokedAt:  "2026-05-01T20:00:00Z",
+		}},
+		{"identity use approved", &BrowserIdentityUseApproved{
+			Type:       MsgTypeBrowserIdentityUseApproved,
+			GrantID:    "grant_1",
+			IdentityID: "identity_1",
+			BrowserID:  "browser_1",
+			SessionID:  "session_1",
+			ChannelID:  "channel_1",
+			Origin:     "https://github.com",
+			ExpiresAt:  "2026-05-01T20:05:00Z",
+		}},
+		{"viewport set", &BrowserViewportSet{
+			Type:              MsgTypeBrowserViewportSet,
+			BrowserID:         "browser_1",
+			SessionID:         "session_1",
+			ChannelID:         "channel_1",
+			ViewportCSSWidth:  1280,
+			ViewportCSSHeight: 720,
+			DeviceScaleFactor: 2,
+			RequestedBy:       "user_1",
+			RequestedAt:       "2026-05-01T20:00:00Z",
+		}},
+		{"sensitive action request approval contract", &BrowserSensitiveActionRequest{
+			Type:                   MsgTypeBrowserSensitiveActionRequest,
+			BrowserID:              "browser_1",
+			RequestID:              "request_1",
+			SessionID:              "session_1",
+			ChannelID:              "channel_1",
+			TaskID:                 "task_1",
+			ApprovalID:             "approval_1",
+			Nonce:                  "nonce_1",
+			ActorUserID:            "user_1",
+			GrantID:                "grant_1",
+			ToolUseID:              "tool_1",
+			Method:                 "click",
+			Category:               "external_effect",
+			Summary:                "Submit form",
+			Origin:                 "https://github.com",
+			ParameterHash:          "sha256:abc",
+			ExpectedExternalEffect: "submit",
+			Sensitivity:            "high",
+			ExpiresAt:              "2026-05-01T20:05:00Z",
+		}},
+		{"sensitive action response approval contract", &BrowserSensitiveActionResponse{
+			Type:                   MsgTypeBrowserSensitiveActionResponse,
+			BrowserID:              "browser_1",
+			RequestID:              "request_1",
+			SessionID:              "session_1",
+			ChannelID:              "channel_1",
+			ApprovalID:             "approval_1",
+			Nonce:                  "nonce_1",
+			ActorUserID:            "user_1",
+			GrantID:                "grant_1",
+			ToolUseID:              "tool_1",
+			Method:                 "click",
+			Category:               "external_effect",
+			Origin:                 "https://github.com",
+			ParameterHash:          "sha256:abc",
+			ExpectedExternalEffect: "submit",
+			Sensitivity:            "high",
+			ExpiresAt:              "2026-05-01T20:05:00Z",
+			Approved:               false,
+			DeniedReason:           "not now",
+		}},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			raw, err := json.Marshal(tc.msg)
+			if err != nil {
+				t.Fatal(err)
+			}
+			env, err := ParseEnvelope(raw)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !jsonEqual(mustJSONMap(t, tc.msg), mustJSONMap(t, env.Payload)) {
+				t.Fatalf("payload mismatch: want %#v, got %#v", tc.msg, env.Payload)
+			}
+		})
+	}
+}
+
+func TestBrowserWorkbenchEnvelopeIgnoresUnknownFields(t *testing.T) {
+	cases := []struct {
+		name string
+		raw  string
+	}{
+		{"control state", `{"type":"browserControlState","browserId":"browser_1","sessionId":"session_1","channelId":"channel_1","owner":"lex","controlVersion":7,"accepted":true,"at":"2026-05-01T20:00:00Z","unknown":"ok"}`},
+		{"control claim request", `{"type":"browserControlClaimRequest","claimId":"claim_1","browserId":"browser_1","sessionId":"session_1","channelId":"channel_1","owner":"lex","requestedBy":"user_1","requestedAt":"2026-05-01T20:00:00Z","unknown":"ok"}`},
+		{"claim and input", `{"type":"browserClaimAndInput","claimId":"claim_1","browserId":"browser_1","sessionId":"session_1","channelId":"channel_1","input":{"browserId":"browser_1","sessionId":"session_1","channelId":"channel_1","owner":"lex","kind":"pointer","unknown":"ok"},"unknown":"ok"}`},
+		{"evidence created", `{"type":"browserEvidenceCreated","evidenceId":"evidence_1","browserId":"browser_1","sessionId":"session_1","channelId":"channel_1","actor":"daemon","status":"succeeded","eventType":"navigation","summary":"Opened GitHub","redactionStatus":"safe","createdAt":"2026-05-01T20:00:00Z","unknown":"ok"}`},
+		{"debug bundle created", `{"type":"browserDebugBundleCreated","bundleId":"bundle_1","browserId":"browser_1","sessionId":"session_1","channelId":"channel_1","redactionStatus":"local_only","residency":"local_only","createdAt":"2026-05-01T20:00:00Z","unknown":"ok"}`},
+		{"identity available", `{"type":"browserIdentityAvailable","identityId":"identity_1","machineId":"machine_1","identityScope":"project","displayName":"GitHub","status":"available","unknown":"ok"}`},
+		{"identity saved", `{"type":"browserIdentitySaved","identityId":"identity_1","machineId":"machine_1","identityScope":"project","identityKey":"github","displayName":"GitHub","savedAt":"2026-05-01T20:00:00Z","unknown":"ok"}`},
+		{"identity revoked", `{"type":"browserIdentityRevoked","identityId":"identity_1","machineId":"machine_1","identityScope":"project","identityKey":"github","revokedAt":"2026-05-01T20:00:00Z","acknowledged":true,"unknown":"ok"}`},
+		{"identity used", `{"type":"browserIdentityUsed","identityId":"identity_1","browserId":"browser_1","sessionId":"session_1","channelId":"channel_1","origin":"https://github.com","usedAt":"2026-05-01T20:00:00Z","unknown":"ok"}`},
+		{"identity bind", `{"type":"browserIdentityBind","bindingId":"binding_1","identityId":"identity_1","machineId":"machine_1","projectId":"project_1","originPattern":"https://github.com","boundBy":"user_1","boundAt":"2026-05-01T20:00:00Z","unknown":"ok"}`},
+		{"identity unbind", `{"type":"browserIdentityUnbind","bindingId":"binding_1","identityId":"identity_1","machineId":"machine_1","projectId":"project_1","revokedBy":"user_1","revokedAt":"2026-05-01T20:00:00Z","unknown":"ok"}`},
+		{"identity use approved", `{"type":"browserIdentityUseApproved","grantId":"grant_1","identityId":"identity_1","browserId":"browser_1","sessionId":"session_1","channelId":"channel_1","origin":"https://github.com","expiresAt":"2026-05-01T20:05:00Z","unknown":"ok"}`},
+		{"viewport set", `{"type":"browserViewportSet","browserId":"browser_1","sessionId":"session_1","channelId":"channel_1","viewportCssWidth":1280,"viewportCssHeight":720,"deviceScaleFactor":2,"requestedBy":"user_1","requestedAt":"2026-05-01T20:00:00Z","unknown":"ok"}`},
+		{"sensitive action request", `{"type":"browserSensitiveActionRequest","browserId":"browser_1","requestId":"request_1","sessionId":"session_1","channelId":"channel_1","taskId":"task_1","approvalId":"approval_1","nonce":"nonce_1","actorUserId":"user_1","grantId":"grant_1","toolUseId":"tool_1","method":"click","category":"external_effect","summary":"Submit form","parameterHash":"sha256:abc","expectedExternalEffect":"submit","sensitivity":"high","expiresAt":"2026-05-01T20:05:00Z","unknown":"ok"}`},
+		{"sensitive action response", `{"type":"browserSensitiveActionResponse","browserId":"browser_1","requestId":"request_1","sessionId":"session_1","channelId":"channel_1","approvalId":"approval_1","nonce":"nonce_1","actorUserId":"user_1","grantId":"grant_1","toolUseId":"tool_1","method":"click","category":"external_effect","parameterHash":"sha256:abc","expectedExternalEffect":"submit","sensitivity":"high","expiresAt":"2026-05-01T20:05:00Z","approved":false,"unknown":"ok"}`},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if _, err := ParseEnvelope([]byte(tc.raw)); err != nil {
+				t.Fatalf("parse envelope: %v", err)
+			}
+		})
+	}
+}
+
+func TestBrowserWorkbenchEnvelopeRejectsInvalidFieldTypes(t *testing.T) {
+	cases := []struct {
+		name string
+		raw  string
+	}{
+		{"control state controlVersion string", `{"type":"browserControlState","browserId":"browser_1","sessionId":"session_1","channelId":"channel_1","owner":"lex","controlVersion":"7","accepted":true,"at":"2026-05-01T20:00:00Z"}`},
+		{"control claim request claimId number", `{"type":"browserControlClaimRequest","claimId":1,"browserId":"browser_1","sessionId":"session_1","channelId":"channel_1","owner":"lex","requestedBy":"user_1","requestedAt":"2026-05-01T20:00:00Z"}`},
+		{"claim and input input string", `{"type":"browserClaimAndInput","claimId":"claim_1","browserId":"browser_1","sessionId":"session_1","channelId":"channel_1","input":"bad"}`},
+		{"evidence created actor number", `{"type":"browserEvidenceCreated","evidenceId":"evidence_1","browserId":"browser_1","sessionId":"session_1","channelId":"channel_1","actor":1,"status":"succeeded","eventType":"navigation","summary":"Opened GitHub","redactionStatus":"safe","createdAt":"2026-05-01T20:00:00Z"}`},
+		{"debug bundle created bundleId number", `{"type":"browserDebugBundleCreated","bundleId":1,"browserId":"browser_1","sessionId":"session_1","channelId":"channel_1","redactionStatus":"local_only","residency":"local_only","createdAt":"2026-05-01T20:00:00Z"}`},
+		{"identity available displayName array", `{"type":"browserIdentityAvailable","identityId":"identity_1","machineId":"machine_1","identityScope":"project","displayName":["GitHub"],"status":"available"}`},
+		{"identity saved machineId number", `{"type":"browserIdentitySaved","identityId":"identity_1","machineId":1,"identityScope":"project","identityKey":"github","displayName":"GitHub","savedAt":"2026-05-01T20:00:00Z"}`},
+		{"identity revoked acknowledged string", `{"type":"browserIdentityRevoked","identityId":"identity_1","machineId":"machine_1","identityScope":"project","identityKey":"github","revokedAt":"2026-05-01T20:00:00Z","acknowledged":"true"}`},
+		{"identity used browserId number", `{"type":"browserIdentityUsed","identityId":"identity_1","browserId":1,"sessionId":"session_1","channelId":"channel_1","origin":"https://github.com","usedAt":"2026-05-01T20:00:00Z"}`},
+		{"identity bind boundBy array", `{"type":"browserIdentityBind","bindingId":"binding_1","identityId":"identity_1","machineId":"machine_1","projectId":"project_1","originPattern":"https://github.com","boundBy":["user_1"],"boundAt":"2026-05-01T20:00:00Z"}`},
+		{"identity unbind revokedAt object", `{"type":"browserIdentityUnbind","bindingId":"binding_1","identityId":"identity_1","machineId":"machine_1","projectId":"project_1","revokedBy":"user_1","revokedAt":{}}`},
+		{"identity use approved expiresAt array", `{"type":"browserIdentityUseApproved","grantId":"grant_1","identityId":"identity_1","browserId":"browser_1","sessionId":"session_1","channelId":"channel_1","origin":"https://github.com","expiresAt":["soon"]}`},
+		{"viewport set width string", `{"type":"browserViewportSet","browserId":"browser_1","sessionId":"session_1","channelId":"channel_1","viewportCssWidth":"1280","viewportCssHeight":720,"deviceScaleFactor":2,"requestedBy":"user_1","requestedAt":"2026-05-01T20:00:00Z"}`},
+		{"sensitive action request approved bool", `{"type":"browserSensitiveActionRequest","browserId":"browser_1","requestId":"request_1","sessionId":"session_1","channelId":"channel_1","taskId":"task_1","approvalId":"approval_1","nonce":"nonce_1","actorUserId":"user_1","grantId":"grant_1","toolUseId":"tool_1","method":"click","category":"external_effect","summary":"Submit form","parameterHash":"sha256:abc","expectedExternalEffect":"submit","sensitivity":"high","expiresAt":false}`},
+		{"sensitive action response approved string", `{"type":"browserSensitiveActionResponse","browserId":"browser_1","requestId":"request_1","sessionId":"session_1","channelId":"channel_1","approvalId":"approval_1","nonce":"nonce_1","actorUserId":"user_1","grantId":"grant_1","toolUseId":"tool_1","method":"click","category":"external_effect","parameterHash":"sha256:abc","expectedExternalEffect":"submit","sensitivity":"high","expiresAt":"2026-05-01T20:05:00Z","approved":"false"}`},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if _, err := ParseEnvelope([]byte(tc.raw)); err == nil {
+				t.Fatal("expected parse error")
+			}
+		})
+	}
+}
+
+func TestBrowserUserInputAckCarriesReasonCode(t *testing.T) {
+	msg := &BrowserUserInputAck{
+		Type:             MsgTypeBrowserUserInputAck,
+		BrowserID:        "browser_1",
+		SessionID:        "session_1",
+		ChannelID:        "channel_1",
+		InputID:          "input_1",
+		Kind:             BrowserInputKindPointer,
+		Phase:            "click",
+		Accepted:         false,
+		FrameSeq:         10,
+		AcceptedFrameSeq: 12,
+		ReasonCode:       BrowserInputRejectStaleFrame,
+		SafeRetry:        true,
+		Message:          "Frame stale, refresh pending",
+		ControlVersion:   3,
+		AckedAt:          "2026-05-01T20:00:00Z",
+	}
+	raw, err := json.Marshal(msg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	env, err := ParseEnvelope(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := env.Payload.(*BrowserUserInputAck)
+	if got.ReasonCode != BrowserInputRejectStaleFrame || !got.SafeRetry {
+		t.Fatalf("decoded = %#v", got)
+	}
+
+	withUnknownField := `{"type":"browserUserInputAck","browserId":"browser_1","sessionId":"session_1","channelId":"channel_1","inputId":"input_1","kind":"pointer","phase":"click","accepted":false,"frameSeq":10,"acceptedFrameSeq":12,"reasonCode":"stale_frame","safeRetry":true,"message":"Frame stale, refresh pending","controlVersion":3,"ackedAt":"2026-05-01T20:00:00Z","unknown_extra":42}`
+	env, err = ParseEnvelope([]byte(withUnknownField))
+	if err != nil {
+		t.Fatalf("unknown field parse: %v", err)
+	}
+	got = env.Payload.(*BrowserUserInputAck)
+	if got.Type != MsgTypeBrowserUserInputAck || got.BrowserID != "browser_1" || got.ReasonCode != BrowserInputRejectStaleFrame || !got.SafeRetry {
+		t.Fatalf("unknown field decoded = %#v", got)
+	}
+
+	invalidReasonCodeType := `{"type":"browserUserInputAck","browserId":"browser_1","sessionId":"session_1","channelId":"channel_1","accepted":false,"reasonCode":42,"ackedAt":"2026-05-01T20:00:00Z"}`
+	if _, err := ParseEnvelope([]byte(invalidReasonCodeType)); err == nil {
+		t.Fatal("expected reasonCode type parse error")
+	}
+}
+
+func TestBrowserSensitiveApprovalValidation(t *testing.T) {
+	valid := BrowserSensitiveActionRequest{
+		ApprovalID:    "approval_1",
+		Nonce:         "nonce_1",
+		ParameterHash: "sha256:abc",
+		ExpiresAt:     "2026-05-01T20:05:00Z",
+	}
+	if err := valid.ValidateApprovalFields(); err != nil {
+		t.Fatalf("valid approval fields: %v", err)
+	}
+
+	for _, tc := range []struct {
+		name string
+		mut  func(*BrowserSensitiveActionRequest)
+	}{
+		{"approval id", func(v *BrowserSensitiveActionRequest) { v.ApprovalID = "" }},
+		{"nonce", func(v *BrowserSensitiveActionRequest) { v.Nonce = "" }},
+		{"parameter hash", func(v *BrowserSensitiveActionRequest) { v.ParameterHash = "" }},
+		{"expires at", func(v *BrowserSensitiveActionRequest) { v.ExpiresAt = "" }},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			msg := valid
+			tc.mut(&msg)
+			if err := msg.ValidateApprovalFields(); err == nil {
+				t.Fatal("expected validation error")
+			}
+		})
+	}
+}
+
+func TestBrowserSensitiveApprovalResponseValidation(t *testing.T) {
+	valid := BrowserSensitiveActionResponse{
+		ApprovalID:    "approval_1",
+		Nonce:         "nonce_1",
+		ParameterHash: "sha256:abc",
+		ExpiresAt:     "2026-05-01T20:05:00Z",
+	}
+	if err := valid.ValidateApprovalFields(); err != nil {
+		t.Fatalf("valid approval response fields: %v", err)
+	}
+
+	for _, tc := range []struct {
+		name string
+		mut  func(*BrowserSensitiveActionResponse)
+	}{
+		{"approval id", func(v *BrowserSensitiveActionResponse) { v.ApprovalID = "" }},
+		{"nonce", func(v *BrowserSensitiveActionResponse) { v.Nonce = "" }},
+		{"parameter hash", func(v *BrowserSensitiveActionResponse) { v.ParameterHash = "" }},
+		{"expires at", func(v *BrowserSensitiveActionResponse) { v.ExpiresAt = "" }},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			msg := valid
+			tc.mut(&msg)
+			if err := msg.ValidateApprovalFields(); err == nil {
+				t.Fatal("expected validation error")
+			}
+		})
+	}
+}
+
 func TestEnvelopeRoundTrip(t *testing.T) {
 	cases := []struct {
 		name string

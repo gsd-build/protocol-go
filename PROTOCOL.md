@@ -881,6 +881,10 @@ Browser support is advertised in `hello.capabilities`.
 | channelId | string |
 | machineId | string |
 | identityId | uuid? |
+| identityScope | string? |
+| identityKey | string? |
+| identityProjectId | uuid? |
+| identitySessionId | uuid? |
 | mode | string |
 | expiresAt | iso8601 string |
 
@@ -952,7 +956,18 @@ Browser support is advertised in `hello.capabilities`.
 | height | int |
 | viewportWidth | int? |
 | viewportHeight | int? |
+| viewportCssWidth | int? |
+| viewportCssHeight | int? |
+| capturePixelWidth | int? |
+| capturePixelHeight | int? |
 | devicePixelRatio | float64? |
+| captureScaleX | float64? |
+| captureScaleY | float64? |
+| encodedBytes | int? |
+| quality | int? |
+| capturePixelRatio | float64? |
+| latencyMs | int64? |
+| latestAcceptedFrameSeq | int64? |
 | capturedAt | iso8601 string |
 | droppedPriorCount | int? |
 
@@ -1021,7 +1036,7 @@ Sent daemon to browser clients for visible interactive browser references.
 
 ### Control
 
-`browserControlClaim`, `browserControlRelease`, and `browserUserInput` coordinate Lex control. Tool calls execute while control owner is `agent`.
+`browserControlClaim`, `browserControlRelease`, `browserControlClaimRequest`, `browserControlState`, `browserClaimAndInput`, and `browserUserInput` coordinate Lex control. Tool calls execute while control owner is `agent`.
 
 #### `browserControlClaim`
 
@@ -1034,6 +1049,47 @@ Sent daemon to browser clients for visible interactive browser references.
 | owner | string |
 | reason | string? |
 | controlVersion | int64? |
+
+#### `browserControlClaimRequest`
+
+| Field | Type |
+|---|---|
+| type | "browserControlClaimRequest" |
+| claimId | string |
+| browserId | string |
+| sessionId | uuid |
+| channelId | string |
+| owner | string |
+| requestedBy | string |
+| requestedAt | iso8601 string |
+| reason | string? |
+| metadata | json? |
+
+#### `browserControlState`
+
+| Field | Type |
+|---|---|
+| type | "browserControlState" |
+| browserId | string |
+| sessionId | uuid |
+| channelId | string |
+| owner | string |
+| controlVersion | int64 |
+| accepted | bool |
+| reason | string? |
+| at | iso8601 string |
+| metadata | json? |
+
+#### `browserClaimAndInput`
+
+| Field | Type |
+|---|---|
+| type | "browserClaimAndInput" |
+| claimId | string |
+| browserId | string |
+| sessionId | uuid |
+| channelId | string |
+| input | BrowserUserInput |
 
 #### `browserControlRelease`
 
@@ -1058,12 +1114,26 @@ Sent daemon to browser clients for visible interactive browser references.
 | channelId | string |
 | owner | string |
 | kind | string |
+| phase | string? |
+| button | string? |
+| buttons | int? |
+| clickCount | int? |
+| pointerType | string? |
+| modifiers | string[]? |
 | x | float64? |
 | y | float64? |
 | text | string? |
 | key | string? |
+| code | string? |
+| location | int? |
+| repeat | bool? |
+| commitMode | string? |
+| mimeTypes | string[]? |
 | deltaX | float64? |
 | deltaY | float64? |
+| url | string? |
+| action | string? |
+| capturedAt | iso8601 string? |
 | frameSeq | int64? |
 | controlVersion | int64? |
 | coordinateSpace | string? |
@@ -1086,10 +1156,31 @@ Sent daemon to browser clients for visible interactive browser references.
 | sessionId | uuid |
 | channelId | string |
 | inputId | string? |
+| kind | string? |
+| phase | string? |
 | accepted | bool |
+| frameSeq | int64? |
+| acceptedFrameSeq | int64? |
+| reasonCode | string? |
+| safeRetry | bool? |
+| message | string? |
 | reason | string? |
 | controlVersion | int64? |
 | ackedAt | iso8601 string |
+
+#### `browserViewportSet`
+
+| Field | Type |
+|---|---|
+| type | "browserViewportSet" |
+| browserId | string |
+| sessionId | uuid |
+| channelId | string |
+| viewportCssWidth | int |
+| viewportCssHeight | int |
+| deviceScaleFactor | float64 |
+| requestedBy | string |
+| requestedAt | iso8601 string |
 
 #### `browserTransportStatus`
 
@@ -1117,6 +1208,57 @@ coordinate space. Receivers reject stale-frame and stale-control input with
 Browser frame producers may drop, coalesce, downscale, or reference frames when
 encoded frames exceed transport limits. Control and approval messages have
 priority over frame delivery.
+
+### Browser Identity And Evidence
+
+Browser identity messages describe local-first profile availability, binding, use, and revocation. Browser evidence messages describe redacted, durable events and local-only debug bundles.
+
+#### `browserEvidenceCreated`
+
+| Field | Type |
+|---|---|
+| type | "browserEvidenceCreated" |
+| evidenceId | string |
+| browserId | string |
+| sessionId | uuid |
+| channelId | string |
+| taskId | uuid? |
+| toolUseId | string? |
+| actor | string |
+| status | string |
+| eventType | string |
+| summary | string |
+| origin | string? |
+| redactionStatus | string |
+| metadata | json? |
+| createdAt | iso8601 string |
+
+#### `browserDebugBundleCreated`
+
+| Field | Type |
+|---|---|
+| type | "browserDebugBundleCreated" |
+| bundleId | string |
+| browserId | string |
+| sessionId | uuid |
+| channelId | string |
+| redactionStatus | string |
+| residency | string |
+| localArtifactPointer | string? |
+| metadata | json? |
+| createdAt | iso8601 string |
+
+#### Identity messages
+
+| Message | Required fields |
+|---|---|
+| browserIdentityAvailable | identityId, machineId, identityScope, displayName, status |
+| browserIdentitySaved | identityId, machineId, identityScope, identityKey, displayName, savedAt |
+| browserIdentityRevoked | identityId, machineId, identityScope, identityKey, revokedAt, acknowledged |
+| browserIdentityUsed | identityId, browserId, sessionId, channelId, origin, usedAt |
+| browserIdentityBind | bindingId, identityId, machineId, projectId, originPattern, boundBy, boundAt |
+| browserIdentityUnbind | bindingId, identityId, machineId, projectId, revokedBy, revokedAt |
+| browserIdentityUseApproved | grantId, identityId, browserId, sessionId, channelId, origin, expiresAt |
 
 ### Preview Bridge Access
 
@@ -1267,10 +1409,18 @@ to the approved loopback target.
 | sessionId | uuid |
 | channelId | string |
 | taskId | uuid |
+| approvalId | string |
+| nonce | string |
+| actorUserId | string |
+| grantId | string |
 | toolUseId | string |
+| method | string |
 | category | string |
 | summary | string |
 | origin | string? |
+| parameterHash | string |
+| expectedExternalEffect | string |
+| sensitivity | string |
 | expiresAt | iso8601 string |
 
 #### `browserSensitiveActionResponse`
@@ -1282,5 +1432,18 @@ to the approved loopback target.
 | requestId | string |
 | sessionId | uuid |
 | channelId | string |
+| approvalId | string |
+| nonce | string |
+| actorUserId | string |
+| grantId | string |
+| toolUseId | string |
+| method | string |
+| category | string |
+| origin | string? |
+| parameterHash | string |
+| expectedExternalEffect | string |
+| sensitivity | string |
+| expiresAt | iso8601 string |
 | approved | bool |
+| deniedReason | string? |
 | reason | string? |
