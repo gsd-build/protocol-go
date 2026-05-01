@@ -3,6 +3,7 @@ package protocol
 import (
 	"bytes"
 	"encoding/json"
+	"strings"
 	"testing"
 	"time"
 )
@@ -32,6 +33,15 @@ func TestEnvelopeRoundTrip(t *testing.T) {
 			Traceparent:        "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
 			CustomInstructions: "Always talk like a pirate.",
 			DisableSkills:      true,
+			BrowserGrant: &BrowserGrantContext{
+				GrantID:   "grant_123",
+				ProjectID: "project_123",
+				SessionID: "22222222-2222-2222-2222-222222222222",
+				TaskID:    "11111111-1111-1111-1111-111111111111",
+				ChannelID: "ch-1",
+				MachineID: "machine_123",
+				ExpiresAt: "2026-05-01T12:00:00Z",
+			},
 		}},
 		{"stream", &Stream{
 			Type:           MsgTypeStream,
@@ -56,9 +66,14 @@ func TestEnvelopeRoundTrip(t *testing.T) {
 			OS:            "darwin",
 			Arch:          "arm64",
 			Capabilities: &HelloCapabilities{
-				Stop:              true,
-				Terminal:          true,
-				AgentTerminalJobs: true,
+				Stop:                       true,
+				Terminal:                   true,
+				AgentTerminalJobs:          true,
+				BrowserRuntimeInstalled:    true,
+				BrowserRuntimeVersion:      "0.1.19",
+				BrowserRuntimeMinVersion:   "0.1.19",
+				BrowserRuntimeMinVersionOK: true,
+				BrowserCloudMethodsVersion: 1,
 			},
 			ActiveTasks: []string{"task-a", "task-b"},
 		}},
@@ -199,6 +214,61 @@ func TestEnvelopeRoundTrip(t *testing.T) {
 			ToolUseID:  "toolu_123",
 			Method:     "navigate",
 			ParamsJSON: json.RawMessage(`{"url":"https://example.com"}`),
+		}},
+		{"browserToolResult", &BrowserToolResult{
+			Type:            MsgTypeBrowserToolResult,
+			BrowserID:       "browser_123",
+			GrantID:         "grant_123",
+			SessionID:       "session_123",
+			ChannelID:       "channel_123",
+			TaskID:          "task_123",
+			ToolUseID:       "toolu_123",
+			OK:              true,
+			ResultJSON:      json.RawMessage(`{"url":"https://example.com","title":"Example Domain"}`),
+			Sensitivity:     "public",
+			RedactionStatus: "not_needed",
+		}},
+		{"browserToolCallStarted", &BrowserToolCallStarted{
+			Type:      MsgTypeBrowserToolCallStarted,
+			BrowserID: "browser_123",
+			GrantID:   "grant_123",
+			SessionID: "session_123",
+			ChannelID: "channel_123",
+			TaskID:    "task_123",
+			ToolUseID: "toolu_123",
+			Method:    "navigate",
+			Category:  "navigation",
+			Summary:   "Navigate to https://example.com",
+			Intent:    "inspect page",
+			Metadata:  json.RawMessage(`{"url":"https://example.com"}`),
+			At:        "2026-05-01T12:00:00Z",
+		}},
+		{"browserToolCallUpdated", &BrowserToolCallUpdated{
+			Type:      MsgTypeBrowserToolCallUpdated,
+			BrowserID: "browser_123",
+			GrantID:   "grant_123",
+			SessionID: "session_123",
+			ChannelID: "channel_123",
+			TaskID:    "task_123",
+			ToolUseID: "toolu_123",
+			Status:    "ok",
+			Summary:   "Navigate to https://example.com",
+			Metadata:  json.RawMessage(`{"statusCode":200}`),
+			At:        "2026-05-01T12:00:01Z",
+		}},
+		{"browserArtifactCreated", &BrowserArtifactCreated{
+			Type:       MsgTypeBrowserArtifactCreated,
+			BrowserID:  "browser_123",
+			GrantID:    "grant_123",
+			SessionID:  "session_123",
+			ChannelID:  "channel_123",
+			TaskID:     "task_123",
+			ArtifactID: "artifact_123",
+			Kind:       "snapshot",
+			Title:      "Example Domain",
+			URL:        "https://example.com",
+			Metadata:   json.RawMessage(`{"snapshotId":"snap_123"}`),
+			CreatedAt:  "2026-05-01T12:00:02Z",
 		}},
 		{"browserSensitiveActionRequest", &BrowserSensitiveActionRequest{
 			Type:      MsgTypeBrowserSensitiveActionRequest,
@@ -1342,6 +1412,106 @@ func TestParseEnvelopeRejectsUnknownType(t *testing.T) {
 	_, err := ParseEnvelope([]byte(`{"type":"bogus"}`))
 	if err == nil {
 		t.Fatal("expected error for unknown type")
+	}
+}
+
+func TestParseEnvelopeBrowserLifecycleCompatibility(t *testing.T) {
+	cases := []struct {
+		name        string
+		messageType MessageType
+		raw         string
+	}{
+		{
+			name:        "browserToolCallStarted",
+			messageType: MsgTypeBrowserToolCallStarted,
+			raw: `{
+				"type":"browserToolCallStarted",
+				"browserId":"browser_123",
+				"grantId":"grant_123",
+				"sessionId":"session_123",
+				"channelId":"channel_123",
+				"taskId":"task_123",
+				"toolUseId":"toolu_123",
+				"method":"snapshot",
+				"summary":"Snapshot page",
+				"unknownFutureField":"ignored",
+				"at":"2026-05-01T12:00:00Z"
+			}`,
+		},
+		{
+			name:        "browserToolCallUpdated",
+			messageType: MsgTypeBrowserToolCallUpdated,
+			raw: `{
+				"type":"browserToolCallUpdated",
+				"browserId":"browser_123",
+				"grantId":"grant_123",
+				"sessionId":"session_123",
+				"channelId":"channel_123",
+				"taskId":"task_123",
+				"toolUseId":"toolu_123",
+				"status":"ok",
+				"summary":"Snapshot page",
+				"unknownFutureField":"ignored",
+				"at":"2026-05-01T12:00:01Z"
+			}`,
+		},
+		{
+			name:        "browserArtifactCreated",
+			messageType: MsgTypeBrowserArtifactCreated,
+			raw: `{
+				"type":"browserArtifactCreated",
+				"browserId":"browser_123",
+				"grantId":"grant_123",
+				"sessionId":"session_123",
+				"channelId":"channel_123",
+				"taskId":"task_123",
+				"artifactId":"artifact_123",
+				"kind":"snapshot",
+				"unknownFutureField":"ignored",
+				"createdAt":"2026-05-01T12:00:02Z"
+			}`,
+		},
+		{
+			name:        "browserToolResult",
+			messageType: MsgTypeBrowserToolResult,
+			raw: `{
+				"type":"browserToolResult",
+				"browserId":"browser_123",
+				"grantId":"grant_123",
+				"sessionId":"session_123",
+				"channelId":"channel_123",
+				"taskId":"task_123",
+				"toolUseId":"toolu_123",
+				"ok":true,
+				"resultJson":{"snapshotId":"snap_123"},
+				"unknownFutureField":"ignored"
+			}`,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name+" accepts unknown fields", func(t *testing.T) {
+			env, err := ParseEnvelope([]byte(tc.raw))
+			if err != nil {
+				t.Fatalf("ParseEnvelope: %v", err)
+			}
+			if env.Type != tc.messageType {
+				t.Fatalf("type = %q, want %q", env.Type, tc.messageType)
+			}
+			data, err := json.Marshal(env.Payload)
+			if err != nil {
+				t.Fatalf("marshal payload: %v", err)
+			}
+			if bytes.Contains(data, []byte("unknownFutureField")) {
+				t.Fatalf("unknown field survived round trip: %s", data)
+			}
+		})
+		t.Run(tc.name+" rejects invalid type", func(t *testing.T) {
+			raw := strings.Replace(tc.raw, string(tc.messageType), string(tc.messageType)+"Invalid", 1)
+			if _, err := ParseEnvelope([]byte(raw)); err == nil {
+				t.Fatal("expected invalid type error")
+			}
+		})
 	}
 }
 

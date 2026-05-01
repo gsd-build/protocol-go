@@ -211,6 +211,12 @@ func payloadForType(msgType string) (any, error) {
 		return &BrowserToolCall{}, nil
 	case MsgTypeBrowserToolResult:
 		return &BrowserToolResult{}, nil
+	case MsgTypeBrowserToolCallStarted:
+		return &BrowserToolCallStarted{}, nil
+	case MsgTypeBrowserToolCallUpdated:
+		return &BrowserToolCallUpdated{}, nil
+	case MsgTypeBrowserArtifactCreated:
+		return &BrowserArtifactCreated{}, nil
 	case MsgTypeBrowserControlClaim:
 		return &BrowserControlClaim{}, nil
 	case MsgTypeBrowserControlRelease:
