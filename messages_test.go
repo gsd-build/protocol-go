@@ -306,6 +306,21 @@ func TestBrowserUserInputAckCarriesReasonCode(t *testing.T) {
 	if got.ReasonCode != BrowserInputRejectStaleFrame || !got.SafeRetry {
 		t.Fatalf("decoded = %#v", got)
 	}
+
+	withUnknownField := `{"type":"browserUserInputAck","browserId":"browser_1","sessionId":"session_1","channelId":"channel_1","inputId":"input_1","kind":"pointer","phase":"click","accepted":false,"frameSeq":10,"acceptedFrameSeq":12,"reasonCode":"stale_frame","safeRetry":true,"message":"Frame stale, refresh pending","controlVersion":3,"ackedAt":"2026-05-01T20:00:00Z","unknown_extra":42}`
+	env, err = ParseEnvelope([]byte(withUnknownField))
+	if err != nil {
+		t.Fatalf("unknown field parse: %v", err)
+	}
+	got = env.Payload.(*BrowserUserInputAck)
+	if got.Type != MsgTypeBrowserUserInputAck || got.BrowserID != "browser_1" || got.ReasonCode != BrowserInputRejectStaleFrame || !got.SafeRetry {
+		t.Fatalf("unknown field decoded = %#v", got)
+	}
+
+	invalidReasonCodeType := `{"type":"browserUserInputAck","browserId":"browser_1","sessionId":"session_1","channelId":"channel_1","accepted":false,"reasonCode":42,"ackedAt":"2026-05-01T20:00:00Z"}`
+	if _, err := ParseEnvelope([]byte(invalidReasonCodeType)); err == nil {
+		t.Fatal("expected reasonCode type parse error")
+	}
 }
 
 func TestBrowserSensitiveApprovalValidation(t *testing.T) {
@@ -327,6 +342,36 @@ func TestBrowserSensitiveApprovalValidation(t *testing.T) {
 		{"nonce", func(v *BrowserSensitiveActionRequest) { v.Nonce = "" }},
 		{"parameter hash", func(v *BrowserSensitiveActionRequest) { v.ParameterHash = "" }},
 		{"expires at", func(v *BrowserSensitiveActionRequest) { v.ExpiresAt = "" }},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			msg := valid
+			tc.mut(&msg)
+			if err := msg.ValidateApprovalFields(); err == nil {
+				t.Fatal("expected validation error")
+			}
+		})
+	}
+}
+
+func TestBrowserSensitiveApprovalResponseValidation(t *testing.T) {
+	valid := BrowserSensitiveActionResponse{
+		ApprovalID:    "approval_1",
+		Nonce:         "nonce_1",
+		ParameterHash: "sha256:abc",
+		ExpiresAt:     "2026-05-01T20:05:00Z",
+	}
+	if err := valid.ValidateApprovalFields(); err != nil {
+		t.Fatalf("valid approval response fields: %v", err)
+	}
+
+	for _, tc := range []struct {
+		name string
+		mut  func(*BrowserSensitiveActionResponse)
+	}{
+		{"approval id", func(v *BrowserSensitiveActionResponse) { v.ApprovalID = "" }},
+		{"nonce", func(v *BrowserSensitiveActionResponse) { v.Nonce = "" }},
+		{"parameter hash", func(v *BrowserSensitiveActionResponse) { v.ParameterHash = "" }},
+		{"expires at", func(v *BrowserSensitiveActionResponse) { v.ExpiresAt = "" }},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			msg := valid
