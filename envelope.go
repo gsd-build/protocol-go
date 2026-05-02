@@ -263,10 +263,6 @@ func payloadForType(msgType string) (any, error) {
 		return &BrowserIdentityUseApproved{}, nil
 	case MsgTypeBrowserViewportSet:
 		return &BrowserViewportSet{}, nil
-	case MsgTypePlanningEvent:
-		return &PlanningEvent{}, nil
-	case MsgTypePlanningEventAck:
-		return &PlanningEventAck{}, nil
 	default:
 		return nil, fmt.Errorf("unknown message type: %q", msgType)
 	}

@@ -1104,69 +1104,6 @@ func TestBrowserUserInputMetadataJSONNames(t *testing.T) {
 	}
 }
 
-func TestPlanningEventRoundTrip(t *testing.T) {
-	in := &PlanningEvent{
-		Type:              MsgTypePlanningEvent,
-		EventID:           "event-1",
-		SchemaVersion:     1,
-		ProjectionVersion: 1,
-		ProjectID:         "project-1",
-		SourceID:          "daemon-1",
-		SourceKind:        "daemon",
-		SourceSeq:         7,
-		RunID:             "run-1",
-		PlanID:            "plan-1",
-		ItemID:            "item-1",
-		ActorType:         "agent",
-		ActorID:           "agent-1",
-		EventKind:         "plan.done",
-		IdempotencyKey:    "done-1",
-		OccurredAt:        "2026-04-30T12:00:00Z",
-		PayloadJSON:       json.RawMessage(`{"summary":"Done"}`),
-		EvidenceIDs:       []string{"evidence-1"},
-	}
-	data, err := json.Marshal(in)
-	if err != nil {
-		t.Fatal(err)
-	}
-	env, err := ParseEnvelope(data)
-	if err != nil {
-		t.Fatal(err)
-	}
-	out, ok := env.Payload.(*PlanningEvent)
-	if !ok {
-		t.Fatalf("payload type = %T", env.Payload)
-	}
-	if out.EventID != in.EventID || out.SourceSeq != in.SourceSeq {
-		t.Fatalf("out = %#v, want %#v", out, in)
-	}
-}
-
-func TestPlanningEventAckRoundTrip(t *testing.T) {
-	in := &PlanningEventAck{
-		Type:      MsgTypePlanningEventAck,
-		EventID:   "event-1",
-		SourceID:  "daemon-1",
-		SourceSeq: 7,
-		Accepted:  true,
-	}
-	data, err := json.Marshal(in)
-	if err != nil {
-		t.Fatal(err)
-	}
-	env, err := ParseEnvelope(data)
-	if err != nil {
-		t.Fatal(err)
-	}
-	out, ok := env.Payload.(*PlanningEventAck)
-	if !ok {
-		t.Fatalf("payload type = %T", env.Payload)
-	}
-	if !out.Accepted || out.EventID != "event-1" {
-		t.Fatalf("out = %#v", out)
-	}
-}
-
 func TestAgentTerminalEnvelopeRejectsInvalidFieldTypes(t *testing.T) {
 	cases := []struct {
 		name string
@@ -2171,54 +2108,6 @@ func TestTaskProviderParseEnvelope(t *testing.T) {
 	}
 }
 
-func TestTaskPlanCapabilityRoundTrip(t *testing.T) {
-	in := Task{
-		Type:      MsgTypeTask,
-		TaskID:    "task_123",
-		SessionID: "session_123",
-		Prompt:    "continue the plan",
-		PlanCapability: &PlanCapability{
-			Token:      "gsd_plan_abc123",
-			APIBaseURL: "https://app.gsd.build",
-			ExpiresAt:  "2026-04-28T22:30:00Z",
-		},
-	}
-
-	raw, err := json.Marshal(in)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	var out Task
-	if err := json.Unmarshal(raw, &out); err != nil {
-		t.Fatal(err)
-	}
-	if out.PlanCapability == nil {
-		t.Fatal("planCapability missing")
-	}
-	if out.PlanCapability.Token != "gsd_plan_abc123" {
-		t.Fatalf("token = %q", out.PlanCapability.Token)
-	}
-	if out.PlanCapability.APIBaseURL != "https://app.gsd.build" {
-		t.Fatalf("apiBaseUrl = %q", out.PlanCapability.APIBaseURL)
-	}
-	if out.PlanCapability.ExpiresAt != "2026-04-28T22:30:00Z" {
-		t.Fatalf("expiresAt = %q", out.PlanCapability.ExpiresAt)
-	}
-
-	env, err := ParseEnvelope([]byte(`{"type":"task","taskId":"task_123","sessionId":"session_123","channelId":"channel_123","prompt":"continue"}`))
-	if err != nil {
-		t.Fatalf("ParseEnvelope compatible payload: %v", err)
-	}
-	compatible, ok := env.Payload.(*Task)
-	if !ok {
-		t.Fatalf("compatible payload type = %T", env.Payload)
-	}
-	if compatible.PlanCapability != nil {
-		t.Fatalf("compatible plan capability = %#v", compatible.PlanCapability)
-	}
-}
-
 func TestHelloCapabilitiesContextRefsRoundTrip(t *testing.T) {
 	in := Hello{
 		Type: MsgTypeHello,
@@ -2485,13 +2374,6 @@ func TestTaskAttemptFieldsRoundTrip(t *testing.T) {
 			UserInputMs:         600000,
 			CleanupTermMs:       2000,
 		},
-		PlanCapability: &PlanCapability{
-			ID:         "cap-1",
-			AttemptID:  "attempt-1",
-			Token:      "opaque",
-			APIBaseURL: "https://app.gsd.build",
-			ExpiresAt:  "2026-04-30T12:45:55Z",
-		},
 	}
 
 	raw, err := json.Marshal(task)
@@ -2504,8 +2386,5 @@ func TestTaskAttemptFieldsRoundTrip(t *testing.T) {
 	}
 	if got.AttemptID != "attempt-1" || got.DeadlineProfile.FirstEventMs != 90000 {
 		t.Fatalf("attempt/deadline fields missing: %#v", got)
-	}
-	if got.PlanCapability == nil || got.PlanCapability.AttemptID != "attempt-1" {
-		t.Fatalf("plan capability attempt missing: %#v", got.PlanCapability)
 	}
 }

@@ -110,9 +110,6 @@ const (
 	MsgTypeBrowserIdentityUnbind          MessageType = "browserIdentityUnbind"
 	MsgTypeBrowserIdentityUseApproved     MessageType = "browserIdentityUseApproved"
 	MsgTypeBrowserViewportSet             MessageType = "browserViewportSet"
-
-	MsgTypePlanningEvent    MessageType = "planningEvent"
-	MsgTypePlanningEventAck MessageType = "planningEventAck"
 )
 
 const (
@@ -165,15 +162,6 @@ type ContextRef struct {
 	ModifiedAt string `json:"modifiedAt,omitempty"`
 }
 
-type PlanCapability struct {
-	ID         string          `json:"id,omitempty"`
-	AttemptID  string          `json:"attemptId,omitempty"`
-	Token      string          `json:"token"`
-	APIBaseURL string          `json:"apiBaseUrl"`
-	ExpiresAt  string          `json:"expiresAt"`
-	Snapshot   json.RawMessage `json:"snapshot,omitempty"`
-}
-
 type BrowserGrantContext struct {
 	GrantID   string `json:"grantId"`
 	ProjectID string `json:"projectId"`
@@ -182,44 +170,6 @@ type BrowserGrantContext struct {
 	ChannelID string `json:"channelId"`
 	MachineID string `json:"machineId"`
 	ExpiresAt string `json:"expiresAt"`
-}
-
-type PlanningEvent struct {
-	Type              MessageType     `json:"type"`
-	EventID           string          `json:"eventId"`
-	SchemaVersion     int             `json:"schemaVersion"`
-	ProjectionVersion int             `json:"projectionVersion"`
-	ProjectID         string          `json:"projectId"`
-	SourceID          string          `json:"sourceId"`
-	SourceKind        string          `json:"sourceKind"`
-	SourceSeq         int64           `json:"sourceSeq"`
-	SourceCursor      string          `json:"sourceCursor,omitempty"`
-	RunID             string          `json:"runId"`
-	WorkstreamID      string          `json:"workstreamId,omitempty"`
-	PlanID            string          `json:"planId,omitempty"`
-	ItemID            string          `json:"itemId,omitempty"`
-	ActorType         string          `json:"actorType"`
-	ActorID           string          `json:"actorId"`
-	ActorRole         string          `json:"actorRole,omitempty"`
-	SessionID         string          `json:"sessionId,omitempty"`
-	TaskID            string          `json:"taskId,omitempty"`
-	EventKind         string          `json:"eventKind"`
-	IdempotencyKey    string          `json:"idempotencyKey"`
-	CausationID       string          `json:"causationId,omitempty"`
-	OccurredAt        string          `json:"occurredAt"`
-	PayloadJSON       json.RawMessage `json:"payload"`
-	EvidenceIDs       []string        `json:"evidenceIds,omitempty"`
-	ParentEventIDs    []string        `json:"parentEventIds,omitempty"`
-	TraceJSON         json.RawMessage `json:"trace,omitempty"`
-}
-
-type PlanningEventAck struct {
-	Type      MessageType `json:"type"`
-	EventID   string      `json:"eventId"`
-	SourceID  string      `json:"sourceId"`
-	SourceSeq int64       `json:"sourceSeq"`
-	Accepted  bool        `json:"accepted"`
-	Error     string      `json:"error,omitempty"`
 }
 
 type TurnKind string
@@ -316,7 +266,6 @@ type Task struct {
 	ContextRefs        []ContextRef         `json:"contextRefs,omitempty"`
 	CustomInstructions string               `json:"customInstructions,omitempty"`
 	DisableSkills      bool                 `json:"disableSkills,omitempty"`
-	PlanCapability     *PlanCapability      `json:"planCapability,omitempty"`
 	BrowserGrant       *BrowserGrantContext `json:"browserGrant,omitempty"`
 }
 

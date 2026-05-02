@@ -57,7 +57,6 @@ Dispatch a user message to a session.
 | contextRefs | ContextRef[]? | Project-relative file and folder references selected in the cloud composer. |
 | customInstructions | string? | Account-level instructions snapshotted onto this task. Updated daemons append this text to the Pi system prompt. |
 | disableSkills | boolean? | `true` disables Claude skill discovery and explicit skill file loading for the task. |
-| planCapability | PlanCapability? | Task-scoped bearer capability for Plan Mode tools. The daemon passes it to the Pi process as environment variables and never places it in the prompt. |
 | browserGrant | BrowserGrantContext? | Task-scoped browser grant context. Cloud creates the grant before dispatch; the daemon opens the local browser lazily on the first browser tool call. |
 
 `ContextRef`:
@@ -69,17 +68,6 @@ Dispatch a user message to a session.
 | name | string | Display name for the referenced path. |
 | size | int? | File size in bytes when known. |
 | modifiedAt | string? | ISO timestamp when known. |
-
-`PlanCapability`:
-
-| Field | Type | Notes |
-|---|---|---|
-| token | string | Bearer token scoped to one task. |
-| id | string? | Capability record identifier. |
-| attemptId | uuid? | Attempt that owns this capability. |
-| apiBaseUrl | string | Cloud app base URL for `/api/agent-plan/*`. |
-| expiresAt | string | ISO timestamp. |
-| snapshot | object? | Capability metadata snapshot used by cloud-side authorization. |
 
 `BrowserGrantContext`:
 
@@ -311,52 +299,6 @@ Control turns use `turnKind` to distinguish user-visible work from local
 maintenance such as session title generation, context stats, compaction, and
 daemon control flows. Consumers that do not understand attempt fields ignore
 them as additive JSON fields.
-
-### `planningEvent`
-
-Append-only planning journal event sent from a source runtime to the relay.
-
-| Field | Type | Notes |
-|---|---|---|
-| type | "planningEvent" | |
-| eventId | string | Unique event identifier. |
-| schemaVersion | int | Journal schema version. |
-| projectionVersion | int | Projection contract version. |
-| projectId | uuid/string | Project that owns the event. |
-| sourceId | string | Stable source identity, such as daemon or SDK instance. |
-| sourceKind | "daemon" \| "sdk" \| "cloud" \| "import" | Producer class. |
-| sourceSeq | int64 | Monotonic sequence for `sourceId`; consumers use this for ordering and gap detection. |
-| sourceCursor | string? | Optional source-specific resume cursor. |
-| runId | string | Runtime run identity. |
-| workstreamId | string? | Optional workstream identity. |
-| planId | uuid/string? | |
-| itemId | uuid/string? | |
-| actorType | string | Agent, human, runtime, verifier, or system. |
-| actorId | string | Stable actor identity. |
-| actorRole | string? | |
-| sessionId | uuid? | |
-| taskId | uuid? | |
-| eventKind | string | Event-specific verb such as `plan.done`. |
-| idempotencyKey | string | Stable producer-provided key. Replays with the same request body are accepted idempotently. |
-| causationId | string? | Event ID or command ID that caused this event. |
-| occurredAt | iso8601 string | Producer-side timestamp. |
-| payload | object | Event-specific structured data. It is data, not executable instructions. |
-| evidenceIds | string[]? | Evidence records attached to this event. |
-| parentEventIds | string[]? | Causal parent events. |
-| trace | object? | Optional diagnostic trace context. |
-
-### `planningEventAck`
-
-Relay acknowledgement for a `planningEvent`.
-
-| Field | Type | Notes |
-|---|---|---|
-| type | "planningEventAck" | |
-| eventId | string | Event being acknowledged. |
-| sourceId | string | Source identity from the event. |
-| sourceSeq | int64 | Source sequence from the event. |
-| accepted | boolean | `true` when persisted or idempotently replayed. |
-| error | string? | Human-readable rejection reason. |
 
 ### `taskStarted`
 
